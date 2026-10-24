@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>geotrack-web-6b0e5d52-4b1a-4c0b-9c0e-1a2b3c4d5e01</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

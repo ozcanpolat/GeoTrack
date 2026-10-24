@@ -27,9 +27,18 @@ builder.Services.AddDbContext<GeoTrackDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.UseNetTopologySuite()));
 builder.Services.AddScoped<IncidentService>();
 
-// AI: sağlayıcı yapılandırılana kadar "yapılandırılmadı" davranışı. Gerçek sağlayıcı için
-// IIncidentAiService uygulayıp bu kaydı değiştirin (bkz. README, "AI yapılandırması").
-builder.Services.AddSingleton<IIncidentAiService, NotConfiguredAiService>();
+// AI: Ai:ApiKey VE Ai:Model ikisi de verilmişse Anthropic sağlayıcısı kullanılır; aksi halde
+// "yapılandırılmadı" davranışı (CRUD/harita/API AI'dan bağımsız çalışır). Bkz. README, "AI yapılandırması".
+var aiOptions = builder.Configuration.GetSection("Ai").Get<AiOptions>() ?? new AiOptions();
+if (aiOptions.IsConfigured)
+{
+    builder.Services.AddSingleton(aiOptions);
+    builder.Services.AddHttpClient<IIncidentAiService, AnthropicAiService>(c => c.Timeout = TimeSpan.FromSeconds(30));
+}
+else
+{
+    builder.Services.AddSingleton<IIncidentAiService, NotConfiguredAiService>();
+}
 
 var app = builder.Build();
 
@@ -119,3 +128,6 @@ app.MapOpenApi();
 app.MapGet("/swagger", () => Results.Redirect("/swagger/index.html")).ExcludeFromDescription();
 
 app.Run();
+
+// WebApplicationFactory tabanlı API testleri için.
+public partial class Program { }

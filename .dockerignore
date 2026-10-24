@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+**/.vs/
+.git/
+.env
+.env.*
+GeoTrack.Tests/
+*.md
