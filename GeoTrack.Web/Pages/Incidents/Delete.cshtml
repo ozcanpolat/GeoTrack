@@ -1,0 +1,30 @@
+@page "{id:int}"
+@model GeoTrack.Web.Pages.Incidents.DeleteModel
+@{
+    ViewData["Title"] = "Arızayı Sil";
+}
+
+<h1>Arızayı Sil</h1>
+
+@if (Model.Incident is { } i)
+{
+    <div class="alert warning" role="alert">Bu kaydı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</div>
+
+    <section class="card">
+        <dl class="details">
+            <dt>Başlık</dt><dd>@i.Title</dd>
+            <dt>Açıklama</dt><dd>@i.Description</dd>
+            <dt>Kategori</dt><dd>@i.Category.Label()</dd>
+            <dt>Durum</dt><dd>@i.Status.Label()</dd>
+            <dt>Öncelik</dt><dd>@i.Priority.Label()</dd>
+            <dt>Konum</dt><dd>@i.Latitude.ToString("0.000000"), @i.Longitude.ToString("0.000000")</dd>
+            <dt>Oluşturulma</dt><dd>@Labels.FormatDate(i.CreatedAt)</dd>
+        </dl>
+    </section>
+
+    <form method="post" class="actions">
+        <div asp-validation-summary="ModelOnly" class="alert error" role="alert"></div>
+        <button type="submit" class="btn danger">Evet, sil</button>
+        <a class="btn" asp-page="Index">Vazgeç</a>
+    </form>
+}

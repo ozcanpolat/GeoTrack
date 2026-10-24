@@ -1,0 +1,35 @@
+@page
+@model GeoTrack.Web.Pages.IndexModel
+@{
+    ViewData["Title"] = "Panel";
+}
+
+<div class="page-head">
+    <h1>Panel</h1>
+    <a class="btn primary" asp-page="/Incidents/Create">+ Yeni Arıza</a>
+</div>
+
+@if (Model.Error is not null)
+{
+    <div class="alert error" role="alert">@Model.Error</div>
+}
+else if (Model.Stats is { } s)
+{
+    <section class="cards" aria-label="İstatistikler">
+        <div class="stat"><span class="stat-value">@s.Total</span><span class="stat-label">Toplam kayıt</span></div>
+        <div class="stat"><span class="stat-value">@s.New</span><span class="stat-label">Yeni</span></div>
+        <div class="stat"><span class="stat-value">@s.InProgress</span><span class="stat-label">Devam ediyor</span></div>
+        <div class="stat"><span class="stat-value">@s.Assigned</span><span class="stat-label">Atandı</span></div>
+        <div class="stat"><span class="stat-value">@s.Resolved</span><span class="stat-label">Çözüldü</span></div>
+        <div class="stat danger"><span class="stat-value">@s.CriticalOpen</span><span class="stat-label">Açık kritik</span></div>
+    </section>
+}
+
+<section class="card">
+    <h2>GeoTrack nedir?</h2>
+    <p>
+        Saha arızalarının kaydını, durumunu ve konumunu tek yerde yönetin. Kayıtlar PostgreSQL/PostGIS'te
+        saklanır; yakınlık sorguları veritabanında <code>ST_DWithin</code> ile çalışır.
+    </p>
+    <p><a asp-page="/Incidents/Index">Arıza listesine git →</a></p>
+</section>

@@ -1,0 +1,62 @@
+@page
+@model GeoTrack.Web.Pages.Incidents.IndexModel
+@{
+    ViewData["Title"] = "Arızalar";
+}
+
+<div class="page-head">
+    <h1>Arıza Kayıtları</h1>
+    <a class="btn primary" asp-page="Create">+ Yeni Arıza</a>
+</div>
+
+<div class="filters card">
+    <label>
+        Durum
+        <select id="filter-status">
+            <option value="">Tümü</option>
+            @foreach (var kv in Labels.Statuses)
+            {
+                <option value="@kv.Key">@kv.Value</option>
+            }
+        </select>
+    </label>
+    <label>
+        Kategori
+        <select id="filter-category">
+            <option value="">Tümü</option>
+            @foreach (var kv in Labels.Categories)
+            {
+                <option value="@kv.Key">@kv.Value</option>
+            }
+        </select>
+    </label>
+</div>
+
+<div id="list-message" class="alert" role="status" hidden></div>
+
+<div class="table-wrap">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Başlık</th>
+                <th>Kategori</th>
+                <th>Durum</th>
+                <th>Öncelik</th>
+                <th>Oluşturulma</th>
+                <th class="right">İşlem</th>
+            </tr>
+        </thead>
+        <tbody id="incident-rows"></tbody>
+    </table>
+</div>
+
+<div class="pager">
+    <button type="button" id="prev-page" class="btn">← Önceki</button>
+    <span id="page-info" aria-live="polite"></span>
+    <button type="button" id="next-page" class="btn">Sonraki →</button>
+</div>
+
+@section Scripts {
+    <script src="~/js/labels.js" asp-append-version="true"></script>
+    <script src="~/js/incident-list.js" asp-append-version="true"></script>
+}

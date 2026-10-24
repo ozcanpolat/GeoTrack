@@ -1,0 +1,13 @@
+@page
+@model GeoTrack.Web.Pages.ErrorModel
+@{
+    ViewData["Title"] = "Hata";
+}
+
+<h1>Bir hata oluştu</h1>
+<p>İşleminiz tamamlanamadı. Lütfen daha sonra tekrar deneyin.</p>
+@if (Model.RequestId is not null)
+{
+    <p class="hint">Destek için istek kimliği: <code>@Model.RequestId</code></p>
+}
+<p><a asp-page="/Index">Panele dön</a></p>

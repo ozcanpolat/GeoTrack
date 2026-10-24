@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - GeoTrack</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <header class="topbar">
+        <div class="container bar">
+            <a class="brand" asp-page="/Index">GeoTrack</a>
+            <nav class="nav" aria-label="Ana menü">
+                <a asp-page="/Index">Panel</a>
+                <a asp-page="/Incidents/Index">Arızalar</a>
+                <a asp-page="/Incidents/Create">Yeni Arıza</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert success" role="status">@success</div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <div class="container">GeoTrack - Akıllı Arıza ve Saha Operasyon Yönetimi (MVP / demo uygulaması)</div>
+    </footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
