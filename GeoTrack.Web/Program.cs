@@ -1,11 +1,48 @@
-using System.Globalization;
+using GeoTrack.Web.Data;
+using GeoTrack.Web.Services;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
 
+var connectionString = builder.Configuration.GetConnectionString("GeoTrack");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "ConnectionStrings:GeoTrack tanımlı değil. Geliştirmede appsettings.Development.json, " +
+        "başka ortamlarda ConnectionStrings__GeoTrack ortam değişkeni kullanın.");
+}
+
+builder.Services.AddDbContext<GeoTrackDbContext>(options =>
+    options.UseNpgsql(connectionString, npgsql => npgsql.UseNetTopologySuite()));
+builder.Services.AddScoped<IncidentService>();
+
 var app = builder.Build();
+
+// İsteğe bağlı: açılışta migration uygula ve demo veri ekle (yapılandırmayla kontrol edilir).
+// Veritabanı kapalıysa uygulama çökmez; hata loglanır ve sayfalar anlaşılır hata gösterir.
+using (var scope = app.Services.CreateScope())
+{
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<GeoTrackDbContext>();
+        if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+        {
+            await db.Database.MigrateAsync();
+        }
+        if (app.Configuration.GetValue<bool>("Database:SeedDemoData"))
+        {
+            await DemoDataSeeder.SeedAsync(db);
+        }
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogError(ex, "Açılışta veritabanı hazırlanamadı. PostgreSQL/PostGIS çalışıyor ve migration uygulanmış mı?");
+    }
+}
 
 // Ondalık ayırıcı sorunlarını önlemek için sunucu kültürü sabit (en-US).
 // Tarihler arayüzde elle "dd.MM.yyyy HH:mm" biçiminde gösterilir.
