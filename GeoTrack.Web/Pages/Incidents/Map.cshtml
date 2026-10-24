@@ -1,0 +1,91 @@
+@page
+@model GeoTrack.Web.Pages.Incidents.MapModel
+@{
+    ViewData["Title"] = "Harita";
+}
+
+<div class="page-head">
+    <h1>Arıza Haritası</h1>
+    <a class="btn" asp-page="Index">Liste görünümü</a>
+</div>
+
+<div id="map-message" class="alert" role="status" hidden></div>
+
+<div class="map-layout">
+    <div>
+        <div id="main-map" class="map large" role="application" aria-label="Arıza haritası"></div>
+        <p class="hint">Renkler önceliği gösterir: gri düşük, mavi orta, turuncu yüksek, kırmızı kritik. Haritaya tıklayarak nokta seçin.</p>
+    </div>
+
+    <aside>
+        <section class="card">
+            <h2>Yakındaki arızalar</h2>
+            <p class="hint">Seçili noktanın çevresindeki kayıtlar PostGIS <code>ST_DWithin</code> ile bulunur.</p>
+            <div class="row">
+                <div class="field">
+                    <label for="sel-lat">Enlem</label>
+                    <input id="sel-lat" type="number" step="any" inputmode="decimal" />
+                </div>
+                <div class="field">
+                    <label for="sel-lng">Boylam</label>
+                    <input id="sel-lng" type="number" step="any" inputmode="decimal" />
+                </div>
+            </div>
+            <div class="field">
+                <label for="radius">Yarıçap (metre)</label>
+                <input id="radius" type="number" min="1" max="50000" step="any" value="500" />
+            </div>
+            <button type="button" id="btn-nearby" class="btn primary" disabled>Yakındaki arızaları bul</button>
+            <div id="nearby-message" class="hint" role="status"></div>
+            <ul id="nearby-results" class="result-list"></ul>
+        </section>
+
+        <section class="card">
+            <h2>Hızlı arıza ekle</h2>
+            <p class="hint">Konum olarak yukarıda seçili nokta kullanılır. Sayfa yenilenmeden kaydedilir.</p>
+            <form id="quick-form" class="form" novalidate>
+                <div class="field">
+                    <label for="q-title">Başlık</label>
+                    <input id="q-title" maxlength="150" autocomplete="off" />
+                </div>
+                <div class="field">
+                    <label for="q-description">Açıklama</label>
+                    <textarea id="q-description" rows="3" maxlength="2000"></textarea>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label for="q-category">Kategori</label>
+                        <select id="q-category">
+                            <option value="">Seçiniz…</option>
+                            @foreach (var kv in Labels.Categories)
+                            {
+                                <option value="@kv.Key">@kv.Value</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="q-priority">Öncelik</label>
+                        <select id="q-priority">
+                            @foreach (var kv in Labels.Priorities)
+                            {
+                                <option value="@kv.Key" selected="@(kv.Key == IncidentPriority.Medium)">@kv.Value</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div id="quick-message" class="alert" role="status" hidden></div>
+                <button type="submit" class="btn primary">Kaydet</button>
+            </form>
+        </section>
+    </aside>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+}
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="~/js/labels.js" asp-append-version="true"></script>
+    <script src="~/js/map-page.js" asp-append-version="true"></script>
+}
