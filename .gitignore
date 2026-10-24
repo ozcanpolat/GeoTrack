@@ -1,0 +1,29 @@
+## .NET
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userprefs
+*.log
+TestResults/
+*.trx
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.DotSettings.user
+
+## Gizli bilgiler
+.env
+.env.*
+!.env.example
+secrets.json
+appsettings.Production.json
+appsettings.Local.json
+
+## OS
+.DS_Store
+Thumbs.db
