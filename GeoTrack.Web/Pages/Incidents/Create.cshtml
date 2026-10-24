@@ -11,6 +11,22 @@
 
     <partial name="_IncidentForm" for="Input" />
 
+    <section class="card" id="ai-box" aria-labelledby="ai-title">
+        <h2 id="ai-title">AI önerisi (isteğe bağlı)</h2>
+        <p class="hint">Başlık ve açıklamaya göre kategori ile öncelik önerir. Öneri otomatik uygulanmaz; onay sizdedir.</p>
+        <button type="button" id="btn-ai" class="btn">AI önerisi al</button>
+        <div id="ai-message" class="alert" role="status" hidden></div>
+        <div id="ai-result" hidden>
+            <p id="ai-summary"></p>
+            <p id="ai-reason" class="hint"></p>
+            <p>Önerilen kategori: <strong id="ai-category"></strong> · Önerilen öncelik: <strong id="ai-priority"></strong></p>
+            <div class="actions">
+                <button type="button" id="ai-accept" class="btn primary">Öneriyi kabul et</button>
+                <button type="button" id="ai-reject" class="btn">Reddet</button>
+            </div>
+        </div>
+    </section>
+
     <div class="actions">
         <button type="submit" class="btn primary">Kaydet</button>
         <a class="btn" asp-page="Index">Vazgeç</a>
@@ -23,5 +39,7 @@
 
 @section Scripts {
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="~/js/labels.js" asp-append-version="true"></script>
     <script src="~/js/picker.js" asp-append-version="true"></script>
+    <script src="~/js/ai-suggest.js" asp-append-version="true"></script>
 }

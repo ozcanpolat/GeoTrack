@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using GeoTrack.Web.Data;
 using GeoTrack.Web.Endpoints;
 using GeoTrack.Web.Services;
+using GeoTrack.Web.Services.AI;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +26,10 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddDbContext<GeoTrackDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.UseNetTopologySuite()));
 builder.Services.AddScoped<IncidentService>();
+
+// AI: sağlayıcı yapılandırılana kadar "yapılandırılmadı" davranışı. Gerçek sağlayıcı için
+// IIncidentAiService uygulayıp bu kaydı değiştirin (bkz. README, "AI yapılandırması").
+builder.Services.AddSingleton<IIncidentAiService, NotConfiguredAiService>();
 
 var app = builder.Build();
 

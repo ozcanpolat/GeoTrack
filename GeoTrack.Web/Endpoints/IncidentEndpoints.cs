@@ -1,6 +1,7 @@
 using GeoTrack.Web.DTOs;
 using GeoTrack.Web.Models;
 using GeoTrack.Web.Services;
+using GeoTrack.Web.Services.AI;
 
 namespace GeoTrack.Web.Endpoints;
 
@@ -35,7 +36,48 @@ public static class IncidentEndpoints
             .WithName("DeleteIncident")
             .WithSummary("Arıza kaydını siler.");
 
+        group.MapPost("/ai-suggestion", Suggest)
+            .WithName("SuggestIncidentClassification")
+            .WithSummary("Başlık/açıklamadan kategori, öncelik ve özet önerir. AI yapılandırılmadıysa 503 döner. Öneri kaydedilmez.");
+
         return app;
+    }
+
+    private static async Task<IResult> Suggest(
+        AiSuggestionRequest request, IIncidentAiService ai, ILoggerFactory loggerFactory, CancellationToken ct)
+    {
+        if (!ValidationHelper.TryValidate(request, out var errors))
+            return Results.ValidationProblem(errors);
+
+        if (!ai.IsConfigured)
+        {
+            return Results.Problem(
+                title: "AI entegrasyonu yapılandırılmadı",
+                detail: "Bu özellik için bir AI sağlayıcısı yapılandırılmamış. Diğer tüm özellikler çalışmaya devam eder.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        try
+        {
+            var suggestion = await ai.SuggestAsync(request.Title, request.Description, ct);
+
+            // Sağlayıcı yanıtı doğrulanır: yalnızca bilinen enum adları kabul edilir.
+            if (!Enum.TryParse<IncidentCategory>(suggestion.CategorySuggestion, out _) ||
+                !Enum.TryParse<IncidentPriority>(suggestion.PrioritySuggestion, out _))
+            {
+                throw new InvalidOperationException("AI yanıtı geçersiz kategori/öncelik içeriyor.");
+            }
+
+            return Results.Ok(suggestion);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            loggerFactory.CreateLogger("IncidentEndpoints").LogError(ex, "AI önerisi alınamadı.");
+            return Results.Problem(
+                title: "AI servisi şu an kullanılamıyor",
+                detail: "Öneri alınamadı. Arıza kaydını önerisiz oluşturabilirsiniz.",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
     }
 
     private static async Task<IResult> List(
