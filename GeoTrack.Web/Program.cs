@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using GeoTrack.Web.Data;
+using GeoTrack.Web.Endpoints;
 using GeoTrack.Web.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +8,11 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
+
+// API'de enum değerleri metin olarak (ör. "InProgress") okunur/yazılır.
+builder.Services.ConfigureHttpJsonOptions(o =>
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("GeoTrack");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -85,5 +92,10 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapRazorPages();
+
+// REST API + OpenAPI belgesi (/openapi/v1.json) + Swagger UI (/swagger)
+app.MapIncidentApi();
+app.MapOpenApi();
+app.MapGet("/swagger", () => Results.Redirect("/swagger/index.html")).ExcludeFromDescription();
 
 app.Run();
