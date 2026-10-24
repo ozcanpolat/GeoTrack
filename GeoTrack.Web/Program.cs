@@ -68,6 +68,21 @@ app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 {
     var feature = context.Features.Get<IExceptionHandlerFeature>();
     var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+    // Geçersiz JSON / bilinmeyen enum değeri gibi istemci hataları 500 değil 400 olmalıdır.
+    if (feature?.Error is BadHttpRequestException badRequest)
+    {
+        logger.LogWarning(badRequest, "Geçersiz istek: {Path}", context.Request.Path);
+        context.Response.StatusCode = badRequest.StatusCode;
+        await context.Response.WriteAsJsonAsync(new Microsoft.AspNetCore.Mvc.ProblemDetails
+        {
+            Status = badRequest.StatusCode,
+            Title = "Geçersiz istek",
+            Detail = "İstek okunamadı. JSON biçimini, alan adlarını ve enum değerlerini kontrol edin."
+        });
+        return;
+    }
+
     logger.LogError(feature?.Error, "Yakalanmamış hata: {Path}", context.Request.Path);
 
     if (context.Request.Path.StartsWithSegments("/api"))
