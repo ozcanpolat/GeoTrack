@@ -9,7 +9,11 @@
     <a class="btn primary" asp-page="Create">+ Yeni Arıza</a>
 </div>
 
-<div class="filters card">
+<section class="filters card" aria-label="Olay filtreleri">
+    <label class="filter-search">
+        Ara
+        <input id="filter-search" type="search" maxlength="150" placeholder="Başlık veya açıklama" autocomplete="off" />
+    </label>
     <label>
         Durum
         <select id="filter-status">
@@ -30,7 +34,21 @@
             }
         </select>
     </label>
-</div>
+    <label>
+        Öncelik
+        <select id="filter-priority">
+            <option value="">Tümü</option>
+            @foreach (var kv in Labels.Priorities)
+            {
+                <option value="@kv.Key">@kv.Value</option>
+            }
+        </select>
+    </label>
+    <label>Başlangıç<input id="filter-from" type="date" /></label>
+    <label>Bitiş<input id="filter-to" type="date" /></label>
+    <label>Sıralama<select id="filter-sort"><option value="recent">En yeni</option><option value="oldest">En eski</option><option value="priority">Öncelik</option><option value="title">Başlık</option></select></label>
+    <button type="button" id="clear-filters" class="btn">Filtreleri temizle</button>
+</section>
 
 <div id="list-message" class="alert" role="status" hidden></div>
 

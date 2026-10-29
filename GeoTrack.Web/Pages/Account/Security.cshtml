@@ -1,0 +1,36 @@
+@page
+@model GeoTrack.Web.Pages.Account.SecurityModel
+@{ ViewData["Title"] = "Hesap güvenliği"; }
+<div class="page-head"><div><span class="eyebrow">Hesap</span><h1>Güvenlik</h1><p>Oturum ve authenticator ayarlarınızı yönetin.</p></div></div>
+@if (Model.Error is not null) { <div class="alert error" role="alert">@Model.Error</div> }
+@if (Model.Success is not null) { <div class="alert success" role="status">@Model.Success</div> }
+@if (Model.RecoveryCodes is not null)
+{
+    <section class="card"><h2>Kurtarma kodları</h2><p class="alert warning">Bu kodlar yalnızca bu ekranda gösterilir. Güvenli bir yerde saklayın; her kod tek kullanımlıktır.</p>
+        <pre class="recovery-codes">@Model.RecoveryCodes</pre>
+    </section>
+}
+<section class="card">
+    <span class="eyebrow">İki aşamalı doğrulama</span>
+    @if (Model.IsEnabled)
+    {
+        <h2>Authenticator etkin</h2><p class="muted">Girişlerde authenticator kodu veya kurtarma kodu istenir.</p>
+        <form method="post" asp-page-handler="RecoveryCodes" class="form"><div class="field"><label asp-for="CurrentPassword">Kurtarma kodlarını yenilemek için parola</label><input asp-for="CurrentPassword" type="password" autocomplete="current-password" required /></div><button class="btn" type="submit">Yeni kurtarma kodları üret</button></form>
+        <form method="post" asp-page-handler="Disable" class="form"><div class="field"><label asp-for="CurrentPassword">Kapatmak için mevcut parola</label><input asp-for="CurrentPassword" type="password" autocomplete="current-password" required /></div><button class="btn danger" type="submit">İki aşamalı doğrulamayı kapat</button></form>
+    }
+    else
+    {
+        <h2>Authenticator ile koruyun</h2><p>Authenticator uygulamasına aşağıdaki anahtarı manuel ekleyin. Anahtar yalnızca oturum açmış hesabınızda gösterilir.</p>
+        <p><strong>Hesap:</strong> @User.Identity?.Name</p>
+        <p><strong>Kurulum anahtarı:</strong> <code id="authenticator-key" class="secret-key">@Model.AuthenticatorKey</code></p>
+        <button id="copy-authenticator-key" class="btn" type="button">Anahtarı kopyala</button>
+        <details><summary>Authenticator bağlantısını görüntüle/kopyala</summary><p class="hint">Bu bağlantı kurulum anahtarı içerir; yalnızca kendi authenticator uygulamanıza aktarın.</p><code id="authenticator-uri" class="secret-key">@Model.OtpAuthUri</code><button id="copy-authenticator-uri" class="btn" type="button">Kurulum bağlantısını kopyala</button></details>
+        <details class="card"><summary>Authenticator doğru ekleme adımları</summary>
+            <ol><li>Authenticator uygulamasında yeni hesap ekleyin ve manuel anahtar girişini seçin.</li><li>Anahtarı boşluksuz girin; anahtar türünü <strong>zamana dayalı (TOTP)</strong> seçin.</li><li>Uygulama saatini cihazın tarih/saat ayarlarından otomatik eşitleyin ve yenilenen 6 haneli kodu girin.</li></ol>
+        </details>
+        <p id="mfa-clock-status" class="hint" data-server-utc="@Model.ServerTimeUtc" role="status">Saat farkı kontrol ediliyor…</p>
+        <form method="post" asp-page-handler="Enable" class="form"><div class="field"><label asp-for="Code">Authenticator kodu</label><input asp-for="Code" autocomplete="one-time-code" inputmode="numeric" required /></div><button class="btn primary" type="submit">Doğrula ve etkinleştir</button></form>
+        <form method="post" asp-page-handler="ResetKey" class="form"><div class="field"><label asp-for="CurrentPassword">Anahtarı yenilemek için mevcut parola</label><input asp-for="CurrentPassword" type="password" autocomplete="current-password" required /></div><button class="btn" type="submit">Yeni kurulum anahtarı oluştur</button></form>
+    }
+</section>
+@section Scripts { <script src="~/js/mfa-setup.js" asp-append-version="true"></script> }

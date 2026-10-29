@@ -4,12 +4,20 @@
 (() => {
   const labels = window.GeoLabels;
   const mapEl = document.getElementById('main-map');
-  if (!mapEl || typeof L === 'undefined' || !labels) return;
+  if (!mapEl) return;
+  const msg = document.getElementById('map-message');
+  if (typeof L === 'undefined' || !labels) {
+    if (msg) {
+      msg.hidden = false;
+      msg.className = 'alert error';
+      msg.textContent = 'Harita bileşeni yüklenemedi. Sayfayı yenileyin; olay listesi çalışmaya devam eder.';
+    }
+    return;
+  }
 
   const DEFAULT_CENTER = [40.21, 28.94];
   const PRIORITY_COLORS = { Low: '#64748b', Medium: '#1f6feb', High: '#f97316', Critical: '#dc2626' };
 
-  const msg = document.getElementById('map-message');
   const selLat = document.getElementById('sel-lat');
   const selLng = document.getElementById('sel-lng');
   const radiusInput = document.getElementById('radius');
@@ -18,17 +26,32 @@
   const nearbyList = document.getElementById('nearby-results');
   const quickForm = document.getElementById('quick-form');
   const quickMsg = document.getElementById('quick-message');
+  const filterStatus = document.getElementById('map-status');
+  const filterCategory = document.getElementById('map-category');
+  const filterPriority = document.getElementById('map-priority');
+  const filterSearch = document.getElementById('map-search');
+  const filterFrom = document.getElementById('map-from');
+  const filterTo = document.getElementById('map-to');
 
   const map = L.map(mapEl).setView(DEFAULT_CENTER, 13);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const tiles = L.tileLayer('/tiles/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkıda bulunanlar'
   }).addTo(map);
+  let tileFailureShown = false;
+  tiles.on('tileerror', () => {
+    if (tileFailureShown) return;
+    tileFailureShown = true;
+    setBox(msg, 'Harita altlığı yüklenemedi. İnternet bağlantısını kontrol edin; kayıt listesi ve konum işlemleri kullanılabilir.', 'warning');
+  });
 
-  const incidentLayer = L.layerGroup().addTo(map);
+  const incidentLayer = (typeof L.markerClusterGroup === 'function'
+    ? L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 40, spiderfyOnMaxZoom: true, spiderfyDistanceMultiplier: 1.8, zoomToBoundsOnClick: true })
+    : L.layerGroup()).addTo(map);
   const markersById = new Map();
   let selectedMarker = null;
   let radiusCircle = null;
+  let mapRequestSeq = 0;
 
   function setBox(el, text, kind) {
     el.hidden = !text;
@@ -59,12 +82,16 @@
   }
 
   function addMarker(item) {
-    const marker = L.circleMarker([item.latitude, item.longitude], {
-      radius: 9,
-      color: '#ffffff',
-      weight: 2,
-      fillColor: PRIORITY_COLORS[item.priority] || '#1f6feb',
-      fillOpacity: 0.9
+    const color = PRIORITY_COLORS[item.priority] || '#1f6feb';
+    const marker = L.marker([item.latitude, item.longitude], {
+      title: item.title,
+      icon: L.divIcon({
+        className: 'incident-dot',
+        html: '<span style="background:' + color + '"></span>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        popupAnchor: [0, -10]
+      })
     });
     marker.bindPopup(popupFor(item));
     marker.addTo(incidentLayer);
@@ -72,31 +99,66 @@
   }
 
   async function loadAll() {
-    incidentLayer.clearLayers();
-    markersById.clear();
+    const requestSeq = ++mapRequestSeq;
     const points = [];
+    const incidents = [];
     try {
       let page = 1;
       let totalPages = 1;
+      let totalCount = 0;
+      if (filterFrom?.value && filterTo?.value && filterFrom.value > filterTo.value) {
+        setBox(msg, 'Başlangıç tarihi bitiş tarihinden sonra olamaz.', 'error');
+        return;
+      }
       while (page <= totalPages && page <= 20) {
-        const res = await fetch('/api/incidents?page=' + page + '&pageSize=100', {
+        const params = new URLSearchParams({ page: String(page), pageSize: '100' });
+        if (filterStatus?.value) params.set('status', filterStatus.value);
+        if (filterCategory?.value) params.set('category', filterCategory.value);
+        if (filterPriority?.value) params.set('priority', filterPriority.value);
+        if (filterSearch?.value.trim()) params.set('q', filterSearch.value.trim());
+        if (filterFrom?.value) params.set('fromUtc', new Date(filterFrom.value + 'T00:00:00').toISOString());
+        if (filterTo?.value) {
+          const endExclusive = new Date(filterTo.value + 'T00:00:00');
+          endExclusive.setDate(endExclusive.getDate() + 1);
+          params.set('toUtc', endExclusive.toISOString());
+        }
+        const res = await fetch('/api/incidents?' + params, {
           headers: { Accept: 'application/json' }
         });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        if (requestSeq !== mapRequestSeq) return;
+        if (!res.ok) throw new Error(problemMessage(await res.json().catch(() => null)) + ' (HTTP ' + res.status + ')');
         const data = await res.json();
-        for (const item of data.items) {
-          addMarker(item);
-          points.push([item.latitude, item.longitude]);
-        }
+        if (requestSeq !== mapRequestSeq) return;
+        totalCount = data.totalCount || 0;
+        incidents.push(...data.items);
         totalPages = data.totalPages || 1;
         page++;
       }
+      if (requestSeq !== mapRequestSeq) return;
+      incidentLayer.clearLayers();
+      markersById.clear();
+      for (const item of incidents) {
+        addMarker(item);
+        points.push([item.latitude, item.longitude]);
+      }
       if (points.length) map.fitBounds(L.latLngBounds(points).pad(0.2));
-      setBox(msg, points.length ? '' : 'Henüz arıza kaydı yok. Haritadan nokta seçip hızlı form ile ekleyebilirsiniz.', 'info');
+      const limitNotice = totalPages > 20 ? ' Haritada ilk 2.000 kayıt gösteriliyor; liste görünümünü kullanarak sayfalı gezin.' : '';
+      setBox(msg, (points.length ? `${points.length} / ${totalCount} olay gösteriliyor.` : 'Filtrelerle eşleşen olay bulunamadı.') + limitNotice, points.length ? 'info' : 'warning');
+      if (!tileFailureShown && points.length) msg.hidden = true;
     } catch (err) {
+      if (requestSeq !== mapRequestSeq) return;
       setBox(msg, 'Arıza kayıtları yüklenemedi. Veritabanı çalışıyor mu? (' + err.message + ')', 'error');
     }
   }
+
+  [filterStatus, filterCategory, filterPriority].filter(Boolean).forEach((filter) => filter.addEventListener('change', loadAll));
+  [filterFrom, filterTo].filter(Boolean).forEach((filter) => filter.addEventListener('change', loadAll));
+  let mapSearchTimer;
+  filterSearch?.addEventListener('input', () => {
+    clearTimeout(mapSearchTimer);
+    mapSearchTimer = setTimeout(loadAll, 250);
+  });
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => map.invalidateSize()).observe(mapEl);
 
   function selectPoint(lat, lng) {
     selLat.value = lat;

@@ -47,7 +47,7 @@
         return;
       }
       if (res.status === 503) {
-        show('AI entegrasyonu yapılandırılmadı. Kaydı AI önerisi olmadan oluşturabilirsiniz.', 'warning');
+        show('AI önerisi şu anda kullanılamıyor. Kaydı AI önerisi olmadan oluşturabilirsiniz.', 'info');
         return;
       }
       if (!res.ok) {

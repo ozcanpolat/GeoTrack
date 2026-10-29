@@ -44,7 +44,9 @@ public record IncidentDto(
     DateTime UpdatedAt,
     double Latitude,
     double Longitude,
-    double? DistanceMeters = null);
+    double? DistanceMeters = null,
+    string? AssignedToUserId = null,
+    DateTime? ResolvedAt = null);
 
 public record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount)
 {

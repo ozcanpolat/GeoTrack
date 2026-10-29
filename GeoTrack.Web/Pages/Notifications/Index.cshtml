@@ -1,0 +1,10 @@
+@page
+@model GeoTrack.Web.Pages.Notifications.IndexModel
+@{ ViewData["Title"] = "Bildirimler"; }
+<div class="page-head"><div><span class="eyebrow">Güncel</span><h1>Bildirimler</h1><p>Olaylarınızla ilgili güncellemeleri takip edin.</p></div><button id="refresh-notifications" class="btn" type="button">Yenile</button></div>
+<div id="connection-state" class="alert info" role="status" aria-live="polite">Bildirim akışı başlatılıyor…</div>
+<section class="card"><ul id="notification-list" class="result-list" aria-label="Bildirim listesi"></ul></section>
+@section Scripts {
+    <script src="~/vendor/signalr/signalr.min.js" asp-append-version="true"></script>
+    <script src="~/js/notifications-page.js" asp-append-version="true"></script>
+}

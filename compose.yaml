@@ -1,9 +1,17 @@
-# GeoTrack - YEREL GELİŞTİRME / DEMO ortamı
-#   Yalnızca veritabanı:      docker compose up -d
-#   Veritabanı + uygulama:    docker compose --profile app up -d --build   → http://localhost:8080
-# Buradaki parola yalnızca geliştirme içindir; üretimde kullanmayın.
-# Değerleri değiştirmek için .env.example dosyasını .env olarak kopyalayın.
+# GeoTrack yerel ortamı: docker compose up --build -d
 services:
+  # Yerel e-posta testi için (Gmail yerine): docker compose --profile smtp4dev up -d
+  # ve .env içinde SMTP_HOST=smtp4dev, SMTP_PORT=25, SMTP_USERNAME/SMTP_PASSWORD boş bırakılır.
+  smtp4dev:
+    profiles: ["smtp4dev"]
+    image: rnwood/smtp4dev:v3
+    container_name: geotrack-smtp4dev
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${SMTP4DEV_WEB_PORT:-8025}:80"
+    volumes:
+      - geotrack_maildata:/smtp4dev
+
   db:
     image: postgis/postgis:17-3.5
     container_name: geotrack-db
@@ -11,9 +19,9 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-geotrack}
       POSTGRES_USER: ${POSTGRES_USER:-geotrack}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geotrack_dev_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your local .env file}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - geotrack_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +31,6 @@ services:
       retries: 10
 
   web:
-    profiles: ["app"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -32,15 +39,40 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "${WEB_PORT:-8080}:8080"
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+    volumes:
+      - geotrack_keys:/home/appuser/.aspnet/DataProtection-Keys
+      - geotrack_photos:/home/appuser/photos
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      ConnectionStrings__GeoTrack: "Host=db;Port=5432;Database=${POSTGRES_DB:-geotrack};Username=${POSTGRES_USER:-geotrack};Password=${POSTGRES_PASSWORD:-geotrack_dev_password}"
-      Database__ApplyMigrationsOnStartup: "true"
-      Database__SeedDemoData: "true"
-      # İsteğe bağlı AI (ikisi de doluysa etkinleşir). Değerleri .env dosyasından verin:
+      ConnectionStrings__GeoTrack: "Host=db;Port=5432;Database=${POSTGRES_DB:-geotrack};Username=${POSTGRES_USER:-geotrack};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your local .env file}"
+      Photos__Path: /home/appuser/photos
+      Database__ApplyMigrationsOnStartup: "${APPLY_MIGRATIONS:-true}"
+      Database__SeedDemoData: "${SEED_DEMO_DATA:-false}"
+      Admin__Email: "${ADMIN_EMAIL:?Set ADMIN_EMAIL in your local .env file}"
+      Admin__Password: "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD (12+ chars) in your local .env file}"
+      Jwt__SigningKey: "${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in your local .env file}"
+      App__PublicBaseUrl: "${PUBLIC_BASE_URL:-http://localhost:8080}"
+      Email__SmtpHost: "${SMTP_HOST:-smtp.gmail.com}"
+      Email__SmtpPort: "${SMTP_PORT:-587}"
+      Email__Username: "${SMTP_USERNAME:-}"
+      Email__Password: "${SMTP_PASSWORD:-}"
+      Email__From: "${SMTP_FROM_EMAIL:-${SMTP_FROM:-${SMTP_USERNAME:-}}}"
+      Email__FromName: "${SMTP_FROM_NAME:-GeoTrack}"
+      Email__EnableSsl: "${SMTP_USE_SSL:-${SMTP_ENABLE_SSL:-false}}"
+      # İsteğe bağlı AI (AI_API_KEY doluysa etkinleşir; AI_MODEL boşsa varsayılan model). Değerleri .env dosyasından verin:
+      Map__TileUrl: "${MAP_TILE_URL:-https://tile.openstreetmap.org/{z}/{x}/{y}.png}"
       Ai__ApiKey: "${AI_API_KEY:-}"
       Ai__Model: "${AI_MODEL:-}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   geotrack_pgdata:
+  geotrack_keys:
+  geotrack_photos:
+  geotrack_maildata:

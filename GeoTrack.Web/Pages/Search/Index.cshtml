@@ -1,0 +1,20 @@
+@page
+@model GeoTrack.Web.Pages.Search.IndexModel
+@{ ViewData["Title"] = "Arama"; }
+<div class="page-head"><div><span class="eyebrow">Keşfet</span><h1>Olaylarda ara</h1><p>Başlık ve açıklamalarda arama yapın; kişisel aramalarınız geçmişte saklanır.</p></div></div>
+<section class="card">
+    <form id="search-form" class="filters" role="search">
+        <label class="filter-search" for="search-query">Arama terimi<input id="search-query" type="search" minlength="2" maxlength="150" required placeholder="Örn. yol, su kesintisi…" /></label>
+        <button class="btn primary" type="submit">Ara</button>
+    </form>
+    <div id="search-message" class="alert" role="status" aria-live="polite" hidden></div>
+    <ul id="search-results" class="result-list" aria-label="Arama sonuçları"></ul>
+</section>
+<section class="card">
+    <div class="section-head"><h2>Son aramalar</h2><button id="refresh-history" class="btn" type="button">Yenile</button></div>
+    <ul id="search-history" class="result-list" aria-label="Arama geçmişi"></ul>
+</section>
+@section Scripts {
+    <script src="~/js/labels.js" asp-append-version="true"></script>
+    <script src="~/js/search-page.js" asp-append-version="true"></script>
+}

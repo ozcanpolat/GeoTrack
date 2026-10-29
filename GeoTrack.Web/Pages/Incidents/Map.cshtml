@@ -5,16 +5,25 @@
 }
 
 <div class="page-head">
-    <h1>Arıza Haritası</h1>
+    <div><span class="eyebrow">Coğrafi görünüm</span><h1>Olay haritası</h1><p>Filtreleri olay listesiyle aynı API sorgusu üzerinden uygular.</p></div>
     <a class="btn" asp-page="Index">Liste görünümü</a>
 </div>
 
 <div id="map-message" class="alert" role="status" hidden></div>
 
+<section class="filters card" aria-label="Harita filtreleri">
+    <label>Durum<select id="map-status"><option value="">Tüm durumlar</option>@foreach (var kv in Labels.Statuses) { <option value="@kv.Key">@kv.Value</option> }</select></label>
+    <label>Kategori<select id="map-category"><option value="">Tüm kategoriler</option>@foreach (var kv in Labels.Categories) { <option value="@kv.Key">@kv.Value</option> }</select></label>
+    <label>Öncelik<select id="map-priority"><option value="">Tüm öncelikler</option>@foreach (var kv in Labels.Priorities) { <option value="@kv.Key">@kv.Value</option> }</select></label>
+    <label>Başlık/açıklama<input id="map-search" type="search" maxlength="150" placeholder="Olay ara" /></label>
+    <label>Başlangıç<input id="map-from" type="date" /></label>
+    <label>Bitiş<input id="map-to" type="date" /></label>
+</section>
+
 <div class="map-layout">
     <div>
-        <div id="main-map" class="map large" role="application" aria-label="Arıza haritası"></div>
-        <p class="hint">Renkler önceliği gösterir: gri düşük, mavi orta, turuncu yüksek, kırmızı kritik. Haritaya tıklayarak nokta seçin.</p>
+        <div id="main-map" class="map large" role="application" aria-label="Olay haritası" aria-describedby="map-help"></div>
+        <p id="map-help" class="hint">İşaretçiler öncelik rengiyle gösterilir ve yakın konumlarda kümelenir. Haritaya tıklayarak nokta seçin. Harita altlığı için internet bağlantısı gerekir.</p>
     </div>
 
     <aside>
@@ -81,11 +90,14 @@
 </div>
 
 @section Styles {
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="~/vendor/leaflet/leaflet.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/vendor/leaflet.markercluster/MarkerCluster.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/vendor/leaflet.markercluster/MarkerCluster.Default.css" asp-append-version="true" />
 }
 
 @section Scripts {
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="~/vendor/leaflet/leaflet.js" asp-append-version="true"></script>
+    <script src="~/vendor/leaflet.markercluster/leaflet.markercluster.js" asp-append-version="true"></script>
     <script src="~/js/labels.js" asp-append-version="true"></script>
     <script src="~/js/map-page.js" asp-append-version="true"></script>
 }

@@ -1,0 +1,13 @@
+@page
+@model GeoTrack.Web.Pages.Account.VerifyModel
+@{ ViewData["Title"] = "E-posta doğrulama"; }
+<section class="panel auth-panel"><span class="eyebrow">Hesap doğrulama</span><h1>Doğrulama kodunu girin</h1>
+<p class="muted">E-posta adresinize gönderilen 6 haneli kodu girin. Kod 10 dakika geçerlidir.</p>
+@if (Model.Info is not null) { <div class="alert info" role="status">@Model.Info</div> }
+@if (Model.Error is not null) { <div class="alert error" role="alert">@Model.Error</div> }
+<form method="post" class="form" novalidate>
+<div class="field"><label asp-for="Email">E-posta</label><input asp-for="Email" type="email" autocomplete="email" required /><span asp-validation-for="Email" class="field-error"></span></div>
+<div class="field"><label asp-for="Code">Doğrulama kodu</label><input asp-for="Code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus /><span asp-validation-for="Code" class="field-error"></span></div>
+<div class="actions"><button class="btn primary" type="submit">Doğrula</button>
+<button class="btn" type="submit" asp-page-handler="Resend" formnovalidate>Kodu yeniden gönder</button></div></form>
+<p class="muted"><a asp-page="Login">Giriş sayfasına dön</a></p></section>

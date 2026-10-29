@@ -1,30 +1,41 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 namespace GeoTrack.Tests;
 
-/// <summary>
-/// API doğrulama/hata yolları. Bu isteklerin hiçbiri veritabanına ulaşmadan yanıtlanır (doğrulama servisten önce çalışır),
-/// bu yüzden PostgreSQL gerekmez. 404/201 gibi veritabanı gerektiren yollar PostgisTests'te (gerçek PostGIS) kapsanır.
-/// </summary>
 public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
 {
+    private const string TestKey = "tests-only-signing-key-at-least-32-chars";
     private readonly HttpClient _client;
+    private readonly HttpClient _anonymousClient;
 
     public ApiTests(WebApplicationFactory<Program> factory)
     {
-        _client = factory
+        var configuredFactory = factory
             .WithWebHostBuilder(b =>
             {
+                b.UseEnvironment("Testing");
                 b.UseSetting("ConnectionStrings:GeoTrack", "Host=localhost;Database=unused;Username=unused;Password=unused");
                 b.UseSetting("Database:ApplyMigrationsOnStartup", "false");
                 b.UseSetting("Database:SeedDemoData", "false");
                 b.UseSetting("Ai:ApiKey", "");
                 b.UseSetting("Ai:Model", "");
-            })
-            .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+                b.UseSetting("Jwt:SigningKey", TestKey);
+            });
+        _client = configuredFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        _anonymousClient = configuredFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var token = new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
+            issuer: "GeoTrack", audience: "GeoTrackClient",
+            claims: [new Claim(ClaimTypes.NameIdentifier, "test-user"), new Claim(ClaimTypes.Role, "Admin")],
+            expires: DateTime.UtcNow.AddMinutes(5),
+            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestKey)), SecurityAlgorithms.HmacSha256)));
+        _client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
     }
 
     private static StringContent Json(string json) => new(json, Encoding.UTF8, "application/json");
@@ -33,6 +44,13 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         "{\"title\":\"Mazgal tıkalı\",\"description\":\"Yoğun yağışta yol su altında kalıyor.\"," +
         "\"category\":\"WaterInfrastructure\",\"priority\":\"High\",\"status\":\"New\"," +
         "\"latitude\":40.2,\"longitude\":28.9}";
+
+    [Fact]
+    public async Task IncidentsApi_RequiresAuthentication()
+    {
+        var res = await _anonymousClient.GetAsync("/api/incidents/");
+        Assert.Equal(HttpStatusCode.Unauthorized, res.StatusCode);
+    }
 
     [Fact]
     public async Task Post_InvalidBody_Returns400WithFieldErrors()
@@ -88,6 +106,17 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
     }
 
+    [Theory]
+    [InlineData("sort=random")]
+    [InlineData("fromUtc=2025-02-01T00%3A00%3A00Z&toUtc=2025-01-01T00%3A00%3A00Z")]
+    [InlineData("q=12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890")]
+    public async Task List_InvalidFilters_Return400(string query)
+    {
+        var res = await _client.GetAsync("/api/incidents?" + query);
+
+        Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
     [Fact]
     public async Task AiSuggestion_WhenNotConfigured_Returns503()
     {
@@ -105,6 +134,51 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
     {
         var res = await _client.PostAsJsonAsync("/api/incidents/ai-suggestion", new { title = "a", description = "b" });
         Assert.Equal(HttpStatusCode.BadRequest, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_WhenEmailIsNotConfigured_Returns503BeforeCreatingAnAccount()
+    {
+        var res = await _anonymousClient.PostAsJsonAsync("/api/auth/register", new
+        {
+            email = $"mail-disabled-{Guid.NewGuid():N}@example.test",
+            password = "ValidPassword123!"
+        });
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, res.StatusCode);
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("SMTP_", body); // teknik yapılandırma ayrıntısı kullanıcıya gösterilmez
+    }
+
+    [Fact]
+    public async Task RegistrationPage_AllowsTileProviderToReceiveOriginReferrer()
+    {
+        var res = await _anonymousClient.GetAsync("/Account/Register");
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.Equal("strict-origin-when-cross-origin", Assert.Single(res.Headers.GetValues("Referrer-Policy")));
+    }
+
+    [Fact]
+    public async Task NotificationsPage_RendersWithLocalSignalRClient()
+    {
+        var res = await _client.GetAsync("/Notifications");
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = await res.Content.ReadAsStringAsync();
+        Assert.Contains("notification-list", body);
+        Assert.Contains("/vendor/signalr/signalr.min.js", body);
+    }
+
+    [Theory]
+    [InlineData("/Search", "Olaylarda ara")]
+    [InlineData("/Analytics", "Operasyon analitiği")]
+    public async Task WorkspacePages_RenderConcretePageModels(string path, string heading)
+    {
+        var res = await _client.GetAsync(path);
+
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        Assert.Contains(heading, await res.Content.ReadAsStringAsync());
     }
 
     [Fact]

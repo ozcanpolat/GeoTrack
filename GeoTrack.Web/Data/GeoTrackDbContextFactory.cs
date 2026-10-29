@@ -3,11 +3,7 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace GeoTrack.Web.Data;
 
-/// <summary>
-/// Yalnızca "dotnet ef" araçları içindir (migrations add / database update). Araçlar bu fabrikayı bulunca
-/// uygulamayı (Program.cs) çalıştırmaz; böylece açılıştaki migration/seed bloğu araç çalışırken tetiklenmez.
-/// Bağlantı dizesi çalışma zamanındaki ile aynı kaynaktan okunur: appsettings*.json ve ortam değişkenleri.
-/// </summary>
+
 public class GeoTrackDbContextFactory : IDesignTimeDbContextFactory<GeoTrackDbContext>
 {
     public GeoTrackDbContext CreateDbContext(string[] args)

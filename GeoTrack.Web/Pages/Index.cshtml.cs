@@ -1,6 +1,7 @@
 using GeoTrack.Web.DTOs;
 using GeoTrack.Web.Services;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Claims;
 
 namespace GeoTrack.Web.Pages;
 
@@ -13,7 +14,7 @@ public class IndexModel(IncidentService incidents, ILogger<IndexModel> logger) :
     {
         try
         {
-            Stats = await incidents.GetStatsAsync(ct);
+            Stats = await incidents.GetStatsAsync(ct, User.FindFirstValue(ClaimTypes.NameIdentifier), User.IsInRole("Admin"));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

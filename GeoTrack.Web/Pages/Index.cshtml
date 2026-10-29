@@ -4,17 +4,32 @@
     ViewData["Title"] = "Panel";
 }
 
-<div class="page-head">
-    <h1>Panel</h1>
-    <a class="btn primary" asp-page="/Incidents/Create">+ Yeni Arıza</a>
-</div>
-
 @if (Model.Error is not null)
 {
     <div class="alert error" role="alert">@Model.Error</div>
 }
 else if (Model.Stats is { } s)
 {
+    <section class="hero">
+        <div>
+            <span class="eyebrow">Saha operasyonları · GeoTrack</span>
+            <h1>Olayları konumla buluşturun.</h1>
+            <p>Olay kayıtlarını tek bir merkezden yönetin, sahadaki yoğunluğu haritada görün ve ekibinizin durumunu anlık takip edin.</p>
+            <div class="actions">
+                <a class="btn primary" asp-page="/Incidents/Create">+ Yeni olay oluştur</a>
+                <a class="btn" asp-page="/Incidents/Map">Haritayı aç</a>
+            </div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+            <svg viewBox="0 0 240 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 142 71 112l40 18 49-67 55 25" stroke="#8bb8f0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8 10"/>
+                <path d="M120 24c-26 0-47 20-47 46 0 35 47 87 47 87s47-52 47-87c0-26-21-46-47-46Z" fill="#1769e0"/>
+                <circle cx="120" cy="69" r="16" fill="white"/>
+                <circle cx="55" cy="145" r="12" fill="#47a77a" stroke="white" stroke-width="5"/>
+                <circle cx="200" cy="88" r="12" fill="#f08b44" stroke="white" stroke-width="5"/>
+            </svg>
+        </div>
+    </section>
     <section class="cards" aria-label="İstatistikler">
         <div class="stat"><span class="stat-value">@s.Total</span><span class="stat-label">Toplam kayıt</span></div>
         <div class="stat"><span class="stat-value">@s.New</span><span class="stat-label">Yeni</span></div>
@@ -25,11 +40,9 @@ else if (Model.Stats is { } s)
     </section>
 }
 
-<section class="card">
-    <h2>GeoTrack nedir?</h2>
-    <p>
-        Saha arızalarının kaydını, durumunu ve konumunu tek yerde yönetin. Kayıtlar PostgreSQL/PostGIS'te
-        saklanır; yakınlık sorguları veritabanında <code>ST_DWithin</code> ile çalışır.
-    </p>
-    <p><a asp-page="/Incidents/Index">Arıza listesine git →</a></p>
+<div class="section-head"><h2>Çalışma alanı</h2><span class="muted">Hızlı erişim</span></div>
+<section class="cards" aria-label="Hızlı erişim">
+    <a class="card quick-link" asp-page="/Incidents/Index"><h2>Olay kayıtları</h2><p class="muted">Listeyi filtreleyin ve kayıtları yönetin.</p><span>Listeyi aç →</span></a>
+    <a class="card quick-link" asp-page="/Search/Index"><h2>Arama</h2><p class="muted">Başlık ve açıklamalar içinde arayın.</p><span>Aramaya git →</span></a>
+    <a class="card quick-link" asp-page="/Notifications/Index"><h2>Bildirimler</h2><p class="muted">Güncellemeleri ve okunma durumunu görün.</p><span>Bildirimleri aç →</span></a>
 </section>

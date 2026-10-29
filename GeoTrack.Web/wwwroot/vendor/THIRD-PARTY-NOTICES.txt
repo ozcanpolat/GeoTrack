@@ -1,0 +1,7 @@
+Third-party frontend assets
+
+- Leaflet 1.9.4 (MIT): https://github.com/Leaflet/Leaflet/blob/v1.9.4/LICENSE
+- Leaflet.markercluster 1.5.3 (MIT): https://github.com/Leaflet/Leaflet.markercluster/blob/v1.5.3/MIT-LICENCE
+- @microsoft/signalr 10.0.11 (MIT): https://github.com/dotnet/aspnetcore/blob/v10.0.11/LICENSE.txt
+
+The SignalR package's third-party notices are in this directory.

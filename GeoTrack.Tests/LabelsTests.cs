@@ -3,7 +3,6 @@ using GeoTrack.Web.Services;
 
 namespace GeoTrack.Tests;
 
-/// <summary>Yeni bir enum değeri eklenip Türkçe etiketi unutulursa test başarısız olur.</summary>
 public class LabelsTests
 {
     [Fact]

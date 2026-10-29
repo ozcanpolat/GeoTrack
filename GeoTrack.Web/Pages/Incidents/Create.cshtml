@@ -2,16 +2,23 @@
 @model GeoTrack.Web.Pages.Incidents.CreateModel
 @{
     ViewData["Title"] = "Yeni Arıza";
+    ViewData["NewIncident"] = true;
 }
 
 <h1>Yeni Arıza Kaydı</h1>
 
-<form method="post" class="card form" novalidate>
+<ol id="wizard-steps" class="wizard-steps" aria-label="Adımlar">
+    <li>1. Konum seç</li><li>2. Detaylar</li><li>3. Fotoğraf ekle</li><li>4. Önizle &amp; gönder</li>
+</ol>
+
+<form id="create-form" method="post" enctype="multipart/form-data" class="card form" novalidate>
+    <input type="hidden" asp-for="SubmitToken" />
+    <div id="wizard-message" class="alert error" role="alert" hidden></div>
     <div asp-validation-summary="ModelOnly" class="alert error" role="alert"></div>
 
     <partial name="_IncidentForm" for="Input" />
 
-    <section class="card" id="ai-box" aria-labelledby="ai-title">
+    <section class="card" id="ai-box" data-step="2" aria-labelledby="ai-title">
         <h2 id="ai-title">AI önerisi (isteğe bağlı)</h2>
         <p class="hint">Başlık ve açıklamaya göre kategori ile öncelik önerir. Öneri otomatik uygulanmaz; onay sizdedir.</p>
         <button type="button" id="btn-ai" class="btn">AI önerisi al</button>
@@ -27,19 +34,37 @@
         </div>
     </section>
 
+    <section class="card" data-step="3" aria-labelledby="photo-title">
+        <h2 id="photo-title">Fotoğraf ekle (isteğe bağlı)</h2>
+        @if (Model.PhotoReselect) { <div class="alert warning" role="status">Bir hata oluştu; tarayıcılar güvenlik gereği dosya seçimini korumaz. Fotoğrafları yeniden seçin. Diğer bilgileriniz korundu.</div> }
+        <p class="hint">Sorunu gösteren en fazla 5 fotoğraf (JPG, PNG veya WebP · her biri en çok 5 MB).</p>
+        <input id="photos" type="file" name="Photos" accept="image/jpeg,image/png,image/webp" multiple />
+        <div id="photo-previews" class="photo-grid"></div>
+    </section>
+
+    <section class="card" data-step="4" aria-labelledby="preview-title">
+        <h2 id="preview-title">Önizle &amp; gönder</h2>
+        <dl id="preview" class="preview"></dl>
+        <div id="preview-photos" class="photo-grid"></div>
+    </section>
+
     <div class="actions">
-        <button type="submit" class="btn primary">Kaydet</button>
+        <button type="button" id="wiz-prev" class="btn" hidden>← Geri</button>
+        <button type="button" id="wiz-next" class="btn primary">İleri →</button>
+        <button type="submit" id="wiz-submit" class="btn primary">Kaydet ve gönder</button>
         <a class="btn" asp-page="Index">Vazgeç</a>
+        <span id="wiz-status" class="hint" role="status" aria-live="polite" hidden>Kaydediliyor, lütfen bekleyin…</span>
     </div>
 </form>
 
 @section Styles {
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="~/vendor/leaflet/leaflet.css" asp-append-version="true" />
 }
 
 @section Scripts {
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="~/vendor/leaflet/leaflet.js" asp-append-version="true"></script>
     <script src="~/js/labels.js" asp-append-version="true"></script>
     <script src="~/js/picker.js" asp-append-version="true"></script>
     <script src="~/js/ai-suggest.js" asp-append-version="true"></script>
+    <script src="~/js/wizard.js" asp-append-version="true"></script>
 }

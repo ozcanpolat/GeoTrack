@@ -1,5 +1,6 @@
 @model IncidentInput
 
+<div data-step="2">
 <div class="field">
     <label asp-for="Title">Başlık</label>
     <input asp-for="Title" maxlength="150" autocomplete="off" />
@@ -38,20 +39,31 @@
 
     <div class="field">
         <label asp-for="Status">Durum</label>
-        <select asp-for="Status">
-            @foreach (var kv in Labels.Statuses)
-            {
-                <option value="@kv.Key">@kv.Value</option>
-            }
-        </select>
+        @if (ViewData["NewIncident"] as bool? == true)
+        {
+            <input type="hidden" asp-for="Status" />
+            <select aria-label="Yeni olay durumu" disabled><option selected>Yeni</option></select>
+            <small class="hint">Yeni kayıtlar Yeni durumunda açılır; durumu iş akışından değiştirin.</small>
+        }
+        else
+        {
+            <select asp-for="Status">
+                @foreach (var kv in Labels.Statuses)
+                {
+                    <option value="@kv.Key">@kv.Value</option>
+                }
+            </select>
+        }
         <span asp-validation-for="Status" class="field-error"></span>
     </div>
 </div>
+</div>
 
-<fieldset class="field geo">
+<fieldset class="field geo" data-step="1">
     <legend>Konum</legend>
     <p class="hint">Haritaya tıklayarak konumu seçin veya enlem/boylamı elle girin.</p>
     <div id="picker-map" class="map small" role="application" aria-label="Konum seçme haritası"></div>
+    <div id="picker-map-message" class="alert warning" role="status" hidden>Harita yüklenemedi. Enlem ve boylam alanlarını elle doldurabilirsiniz.</div>
     <div class="row">
         <div class="field">
             <label asp-for="Latitude">Enlem</label>

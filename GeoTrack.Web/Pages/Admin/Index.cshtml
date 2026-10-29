@@ -1,0 +1,36 @@
+@page
+@model GeoTrack.Web.Pages.Admin.IndexModel
+@{ ViewData["Title"] = "Yönetim"; }
+<div class="page-head"><div><span class="eyebrow">Yönetim</span><h1>Yönetici paneli</h1><p>Kullanıcı erişimini ve operasyon hacmini yönetin.</p></div></div>
+<section class="cards" aria-label="Yönetim özeti">
+    <article class="stat"><span class="stat-value">@Model.Users</span><span class="stat-label">Kullanıcı</span></article>
+    <article class="stat"><span class="stat-value">@Model.Incidents</span><span class="stat-label">Toplam olay</span></article>
+    <article class="stat"><span class="stat-value">@Model.OpenIncidents</span><span class="stat-label">Açık olay</span></article>
+    <article class="stat"><span class="stat-value">@Model.UnreadNotifications</span><span class="stat-label">Okunmamış bildirim</span></article>
+</section>
+@if (Model.EmailConfigured) { <div class="alert success" role="status">E-posta hizmeti yapılandırılmış.</div> }
+else { <div class="alert warning" role="status">SMTP ayarları eksik: @(string.Join(", ", Model.EmailMissing)). Kayıt ve parola sıfırlama e-postaları gönderilemez. .env dosyasını doldurup web servisini yeniden oluşturun.</div> }
+@if (TempData["Error"] is string error) { <div class="alert error" role="alert">@error</div> }
+<div class="section-head"><h2>Kullanıcı yönetimi</h2><span class="muted">@Model.UserList.Count hesap</span></div>
+<div class="table-wrap"><table class="table"><thead><tr><th>E-posta</th><th>Rol</th><th>Durum</th><th>Kayıt tarihi</th><th>İşlem</th></tr></thead><tbody>
+@foreach (var user in Model.UserList)
+{
+    <tr><td>@user.Email</td><td>@string.Join(", ", user.Roles)</td><td><span class="badge @(user.IsActive ? "status-Resolved" : "priority-Critical")">@(user.IsActive ? "Etkin" : "Devre dışı")</span></td><td>@user.CreatedAtUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td>
+    <td><form method="post" asp-page-handler="SetActive"><input type="hidden" name="userId" value="@user.Id" /><input type="hidden" name="isActive" value="@(!user.IsActive)" /><button class="btn" type="submit">@(user.IsActive ? "Devre dışı bırak" : "Etkinleştir")</button></form></td></tr>
+}
+</tbody></table></div>
+
+<div class="section-head"><h2>Son yönetim ve olay işlemleri</h2></div>
+<div class="table-wrap"><table class="table"><thead><tr><th>Zaman</th><th>İşlem</th><th>Kayıt türü</th><th>Kayıt</th><th>Ayrıntı</th></tr></thead><tbody>
+@if (Model.RecentAudit.Count == 0)
+{
+    <tr><td colspan="5" class="muted">Henüz denetim kaydı yok.</td></tr>
+}
+else
+{
+    @foreach (var entry in Model.RecentAudit)
+    {
+        <tr><td>@entry.TimestampUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</td><td>@entry.Action</td><td>@entry.EntityType</td><td>@entry.EntityId</td><td>@entry.Details</td></tr>
+    }
+}
+</tbody></table></div>

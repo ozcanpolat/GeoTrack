@@ -1,0 +1,38 @@
+@page
+@model GeoTrack.Web.Pages.Analytics.IndexModel
+@{ ViewData["Title"] = "Analitik"; }
+<div class="page-head"><div><span class="eyebrow">Raporlama</span><h1>Operasyon analitiği</h1><p>Durum, önem, kategori, zaman aralığı ve PostGIS yakınlık filtresine göre özet.</p></div></div>
+<form id="analytics-filter" class="filters card">
+    <label>Başlangıç<input id="analytics-from" type="date" /></label>
+    <label>Bitiş<input id="analytics-to" type="date" /></label>
+    <label>Durum<select id="analytics-status"><option value="">Tümü</option>@foreach (var kv in Labels.Statuses) { <option value="@kv.Key">@kv.Value</option> }</select></label>
+    <label>Önem<select id="analytics-priority"><option value="">Tümü</option>@foreach (var kv in Labels.Priorities) { <option value="@kv.Key">@kv.Value</option> }</select></label>
+    <label>Kategori<select id="analytics-category"><option value="">Tümü</option>@foreach (var kv in Labels.Categories) { <option value="@kv.Key">@kv.Value</option> }</select></label>
+    <details class="geo-filter"><summary>Harita yarıçapı filtresi</summary><div class="row">
+        <label>Enlem<input id="analytics-lat" type="number" min="-90" max="90" step="any" inputmode="decimal" /></label>
+        <label>Boylam<input id="analytics-lng" type="number" min="-180" max="180" step="any" inputmode="decimal" /></label>
+        <label>Yarıçap (m)<input id="analytics-radius" type="number" min="1" max="50000" value="1000" /></label>
+    </div><a asp-page="/Incidents/Map">Haritadan koordinat seçmek için haritayı açın</a></details>
+    <div class="actions"><button class="btn primary" type="submit">Raporu uygula</button><button class="btn" id="analytics-clear" type="button">Temizle</button></div>
+</form>
+<div id="analytics-message" class="alert info" role="status" aria-live="polite">Analitik yükleniyor…</div>
+<section id="analytics-empty" class="card empty-panel" hidden>
+    <h2>Gösterilecek kayıt yok</h2>
+    <p class="muted">Seçili filtrelerle eşleşen olay bulunamadı. Filtreleri temizleyin veya <a asp-page="/Incidents/Create">yeni bir olay</a> ekleyin.</p>
+</section>
+<section id="analytics-results" hidden>
+    <div id="analytics-stats" class="cards"></div>
+    <div class="analytics-grid">
+        <section class="card chart-card"><h2>Önem seviyesine göre dağılım</h2><p class="hint">Filtrelenmiş kayıtların önem payları.</p><div id="chart-priority" class="chart donut-wrap"></div></section>
+        <section class="card chart-card"><h2>Durum dağılımı</h2><p class="hint">İş akışı aşamalarına göre kayıt sayısı ve yüzdesi.</p><div id="chart-status" class="chart donut-wrap"></div></section>
+        <section class="card chart-card"><h2>Kategori dağılımı</h2><p class="hint">Arıza türlerine göre kayıt sayısı.</p><div id="analytics-categories" class="bar-list"></div></section>
+    </div>
+    <section class="card chart-card"><h2>Zaman içinde oluşturulan kayıtlar</h2><p class="hint">Günlük yeni kayıt sayısı (en fazla son 90 gün, UTC).</p><div id="chart-timeline" class="chart"></div></section>
+    <section class="card"><h2>Önceliğe göre rapor</h2><p class="hint">Kritikten düşüğe sıralı; açık = Yeni + Devam + Atandı.</p>
+        <div class="table-wrap"><table class="report-table"><thead><tr><th>Önem</th><th>Toplam</th><th>Açık</th><th>Çözüldü</th><th>Pay</th></tr></thead><tbody id="analytics-table"></tbody></table></div>
+    </section>
+</section>
+@section Scripts {
+    <script src="~/js/labels.js" asp-append-version="true"></script>
+    <script src="~/js/analytics-page.js" asp-append-version="true"></script>
+}

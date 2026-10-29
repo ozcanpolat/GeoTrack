@@ -3,7 +3,6 @@ using NetTopologySuite.Geometries;
 
 namespace GeoTrack.Web.Data;
 
-/// <summary>SRID 4326 (WGS84) nokta üretimi. Sıra: X = boylam, Y = enlem.</summary>
 public static class GeoFactory
 {
     public const int Srid = 4326;

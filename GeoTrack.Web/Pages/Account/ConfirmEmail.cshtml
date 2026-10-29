@@ -1,0 +1,6 @@
+@page
+@model GeoTrack.Web.Pages.Account.ConfirmEmailModel
+@{ ViewData["Title"] = "E-posta doğrulama"; }
+<section class="panel auth-panel"><span class="eyebrow">Hesap güvenliği</span><h1>E-posta doğrulama</h1>
+<div class="alert @(Model.Confirmed ? "success" : "info")" role="status">@Model.Message</div>
+<a class="btn primary" asp-page="Login">Giriş sayfasına git</a></section>

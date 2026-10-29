@@ -4,6 +4,12 @@
   const labels = window.GeoLabels;
   const statusSelect = document.getElementById('filter-status');
   const categorySelect = document.getElementById('filter-category');
+  const prioritySelect = document.getElementById('filter-priority');
+  const searchInput = document.getElementById('filter-search');
+  const fromInput = document.getElementById('filter-from');
+  const toInput = document.getElementById('filter-to');
+  const sortSelect = document.getElementById('filter-sort');
+  const clearFilters = document.getElementById('clear-filters');
   const rows = document.getElementById('incident-rows');
   const message = document.getElementById('list-message');
   const prevBtn = document.getElementById('prev-page');
@@ -94,6 +100,19 @@
     const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
     if (statusSelect.value) params.set('status', statusSelect.value);
     if (categorySelect.value) params.set('category', categorySelect.value);
+    if (prioritySelect?.value) params.set('priority', prioritySelect.value);
+    if (searchInput?.value.trim()) params.set('q', searchInput.value.trim());
+    if (fromInput?.value && toInput?.value && fromInput.value > toInput.value) {
+      showMessage('Başlangıç tarihi bitiş tarihinden sonra olamaz.', 'error');
+      return;
+    }
+    if (fromInput?.value) params.set('fromUtc', new Date(fromInput.value + 'T00:00:00').toISOString());
+    if (toInput?.value) {
+      const endExclusive = new Date(toInput.value + 'T00:00:00');
+      endExclusive.setDate(endExclusive.getDate() + 1);
+      params.set('toUtc', endExclusive.toISOString());
+    }
+    if (sortSelect?.value) params.set('sort', sortSelect.value);
 
     showMessage('Yükleniyor…', 'info');
     try {
@@ -101,7 +120,11 @@
         headers: { Accept: 'application/json' }
       });
       if (seq !== requestSeq) return; // daha yeni bir istek başlatıldı
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (!res.ok) {
+        const problem = await res.json().catch(() => null);
+        const detail = problem?.errors ? Object.values(problem.errors).flat().join(' ') : (problem?.detail || problem?.title);
+        throw new Error((detail || 'Sunucu isteği reddetti.') + ' (HTTP ' + res.status + ')');
+      }
       const data = await res.json();
       if (seq !== requestSeq) return;
       showMessage('');
@@ -114,6 +137,26 @@
 
   statusSelect.addEventListener('change', () => { page = 1; load(); });
   categorySelect.addEventListener('change', () => { page = 1; load(); });
+  prioritySelect?.addEventListener('change', () => { page = 1; load(); });
+  fromInput?.addEventListener('change', () => { page = 1; load(); });
+  toInput?.addEventListener('change', () => { page = 1; load(); });
+  sortSelect?.addEventListener('change', () => { page = 1; load(); });
+  let searchTimer;
+  searchInput?.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { page = 1; load(); }, 250);
+  });
+  clearFilters?.addEventListener('click', () => {
+    statusSelect.value = '';
+    categorySelect.value = '';
+    if (prioritySelect) prioritySelect.value = '';
+    if (searchInput) searchInput.value = '';
+    if (fromInput) fromInput.value = '';
+    if (toInput) toInput.value = '';
+    if (sortSelect) sortSelect.value = 'recent';
+    page = 1;
+    load();
+  });
   prevBtn.addEventListener('click', () => { if (page > 1) { page--; load(); } });
   nextBtn.addEventListener('click', () => { if (page < totalPages) { page++; load(); } });
 

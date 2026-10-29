@@ -20,6 +20,7 @@ TestResults/
 .env
 .env.*
 !.env.example
+backups/
 secrets.json
 appsettings.Production.json
 appsettings.Local.json

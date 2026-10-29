@@ -18,11 +18,96 @@
     </div>
 </form>
 
+@if (Model.Incident is { } incident)
+{
+    <section class="card">
+        <span class="eyebrow">İş akışı</span>
+        <h2>Durum ve atama</h2>
+        <p class="hint">Durum geçişleri sunucuda denetlenir. Çözülmüş olayları yalnızca yönetici yeniden açabilir.</p>
+        <form method="post" enctype="multipart/form-data" asp-page-handler="Workflow" asp-route-id="@Model.IncidentId" class="filters">
+            <label>Yeni durum<select name="status" required>
+                @foreach (var kv in Labels.Statuses) { <option value="@kv.Key" selected="@(kv.Key == incident.Status)">@kv.Value</option> }
+            </select></label>
+            @if (Model.IsAdmin)
+            {
+                <label>Atanan kullanıcı<select name="assignedToUserId">
+                    <option value="">Atama yok</option>
+                    @foreach (var user in Model.AssignableUsers)
+                    {
+                        <option value="@user.Id" selected="@(user.Id == incident.AssignedToUserId)">@user.Email</option>
+                    }
+                </select></label>
+            }
+            @if (Model.IsAdmin)
+            {
+                <label>Çözüm fotoğrafı (isteğe bağlı, yalnızca "Çözüldü" seçilirse kaydedilir)<input type="file" name="resolutionPhotos" accept="image/jpeg,image/png,image/webp" multiple /></label>
+            }
+            <button class="btn primary" type="submit">İş akışını güncelle</button>
+        </form>
+        @if (incident.AssignedToUserId is not null) { <p class="hint">Atanan kullanıcı kimliği: <code>@incident.AssignedToUserId</code></p> }
+        @if (incident.ResolvedAt is { } resolved) { <p class="hint">Çözülme zamanı: @resolved.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</p> }
+    </section>
+}
+
+<section class="card">
+    <span class="eyebrow">Fotoğraflar</span>
+    <h2>Fotoğraflar</h2>
+    <p class="hint">Bildirim fotoğrafı sorunun ilk hâlini, çözüm fotoğrafı müdahale sonrasını gösterir; ikisi ayrı saklanır ve birbirinin yerine geçmez.</p>
+    @foreach (var (kind, title, canAdd) in new[] { ("citizen", "Bildirim Fotoğrafı", true), ("resolution", "Çözüm Fotoğrafı", Model.IsAdmin) })
+    {
+        var items = Model.Photos.Where(p => p.Kind == kind).ToList();
+        <h3>@title</h3>
+        @if (items.Count == 0) { <p class="empty-state">Henüz fotoğraf yok.</p> }
+        else
+        {
+            <div class="photo-grid">
+                @foreach (var p in items)
+                {
+                    <figure>
+                        <a href="/api/incidents/@Model.IncidentId/photos/@p.Name" target="_blank" rel="noopener"><img src="/api/incidents/@Model.IncidentId/photos/@p.Name" alt="@title" loading="lazy" /></a>
+                        @if (kind == "citizen" || Model.IsAdmin)
+                        {
+                            <form method="post" asp-page-handler="DeletePhoto" asp-route-id="@Model.IncidentId"><input type="hidden" name="name" value="@p.Name" /><button class="btn danger" type="submit">Sil</button></form>
+                        }
+                    </figure>
+                }
+            </div>
+        }
+        @if (canAdd && items.Count < 5)
+        {
+            <form method="post" enctype="multipart/form-data" asp-page-handler="Photo" asp-route-id="@Model.IncidentId" class="filters">
+                <input type="hidden" name="kind" value="@kind" />
+                <label>Fotoğraf ekle (JPG/PNG/WebP, en çok 5 MB)<input type="file" name="files" accept="image/jpeg,image/png,image/webp" multiple required /></label>
+                <button class="btn primary" type="submit">Yükle</button>
+            </form>
+        }
+    }
+</section>
+
+<section class="card">
+    <h2>Değişiklik geçmişi</h2>
+    @if (Model.History.Count == 0)
+    {
+        <p class="empty-state">Bu olay için henüz geçmiş kaydı yok.</p>
+    }
+    else
+    {
+        <ol class="timeline">
+            @foreach (var entry in Model.History)
+            {
+                <li><strong>@entry.Action</strong><span class="muted"> · @entry.CreatedAtUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</span>
+                    @if (entry.PreviousValue is not null || entry.NewValue is not null) { <div class="muted">@entry.PreviousValue → @entry.NewValue</div> }
+                </li>
+            }
+        </ol>
+    }
+</section>
+
 @section Styles {
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="~/vendor/leaflet/leaflet.css" asp-append-version="true" />
 }
 
 @section Scripts {
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="~/vendor/leaflet/leaflet.js" asp-append-version="true"></script>
     <script src="~/js/picker.js" asp-append-version="true"></script>
 }

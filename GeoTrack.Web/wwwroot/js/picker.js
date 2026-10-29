@@ -1,7 +1,12 @@
 // Oluştur/Düzenle formlarındaki konum seçici: haritaya tıklayınca enlem/boylam alanları dolar.
 (() => {
   const el = document.getElementById('picker-map');
-  if (!el || typeof L === 'undefined') return;
+  if (!el) return;
+  if (typeof L === 'undefined') {
+    const message = document.getElementById('picker-map-message');
+    if (message) message.hidden = false;
+    return;
+  }
 
   const latInput = document.querySelector('input[name$="Latitude"]');
   const lngInput = document.querySelector('input[name$="Longitude"]');
@@ -21,10 +26,15 @@
   const hasPoint = valid(lat, lng);
 
   const map = L.map(el).setView(hasPoint ? [lat, lng] : DEFAULT_CENTER, hasPoint ? 15 : 12);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  const tiles = L.tileLayer('/tiles/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> katkıda bulunanlar'
   }).addTo(map);
+  tiles.on('tileerror', () => {
+    const message = document.getElementById('picker-map-message');
+    if (message) message.hidden = false;
+  });
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => map.invalidateSize()).observe(el);
 
   let marker = null;
   function place(la, ln, pan) {

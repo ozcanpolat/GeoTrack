@@ -1,184 +1,195 @@
-# GeoTrack — Akıllı Arıza ve Saha Operasyon Yönetimi
+# GeoTrack
 
-Saha arızalarının kaydını, durumunu, önceliğini ve **konumunu** tek yerde yöneten bir web uygulaması (MVP).
-Kayıtlar PostgreSQL/PostGIS'te saklanır; "şu noktanın 500 m çevresindeki arızalar" sorgusu uygulamada değil,
-**veritabanında** `ST_DWithin` ile çalışır.
+**A geospatial incident reporting and management platform built with ASP.NET Core, PostgreSQL/PostGIS, and Docker.**
 
-> **Demo uygulamasıdır.** Örnek kayıtlar ve koordinatlar kurgusaldır, gerçek bir kurum verisi değildir.
-> Kimlik doğrulama/yetkilendirme yoktur; çok kullanıcılı üretim güvenliği iddiası taşımaz.
+GeoTrack lets users report incidents, attach photos, view location-based information on a map, and follow incident progress. Authorized staff can manage reports, record resolution details, and review operational analytics.
 
-## ⚠️ Doğrulama durumu (lütfen önce okuyun)
+> Portfolio project. Features and deployment instructions should be verified against the current repository before production use.
 
-Bu kod, içinde `dotnet`, internet erişimi (NuGet) ve Docker motoru bulunmayan bir ortamda yazıldı.
-Bu yüzden **henüz hiç derlenmedi, çalıştırılmadı ve test edilmedi**. Aşağıdakiler "çalışıyor" değil,
-"çalışması için yazıldı ve ilk çalıştırmada doğrulanmalı" anlamındadır:
+## Screenshots
 
-| Konu | Durum |
+### Home
+![GeoTrack home page](screenshots/home.png)
+
+### Create an incident
+![Create incident form](screenshots/create-incident.png)
+
+### Incident list
+![Incident list](screenshots/incidents-list.png)
+
+### Operations analytics
+![Operations analytics](screenshots/operations-analytics.png)
+
+### Statistics dashboard
+![Statistics dashboard](screenshots/statistics-dashboard.png)
+
+### Notifications
+![Notifications](screenshots/notifications.png)
+
+## Key features
+
+- **Incident reporting:** create incident reports with category, priority, description, and location details.
+- **Map and geospatial queries:** display incidents on an interactive map and support location/proximity-based queries using PostGIS.
+- **Incident lifecycle management:** authorized staff can review and update incident status.
+- **Photo attachments:** separate citizen-submitted and resolution photos, with access checks and non-overwriting file creation.
+- **Role-based access control:** authentication and authorization for user and administrative workflows.
+- **Operational analytics:** dashboard views for incident counts and breakdowns by status, priority, and other available dimensions.
+- **Email verification:** registration flow designed around time-limited verification codes and SMTP configuration.
+- **REST API:** Minimal API endpoints for incident-related operations.
+- **Containerized development:** Docker Compose setup for the web app and supporting services.
+- **Automated tests:** xUnit test project for application behavior and core services.
+
+## Technology stack
+
+| Area | Technologies |
 |---|---|
-| `dotnet build` | Denenmedi — ilk çalıştırmada derleme hatası çıkabilir |
-| EF Core migration | `Migrations/` altında **elle yazıldı** (dotnet ile üretilmedi); önce doğrulayın (aşağıya bakın) |
-| PostGIS / `ST_DWithin` | Denenmedi |
-| API, Swagger, harita, Ajax | Denenmedi |
-| Dockerfile / `compose --profile app` | Denenmedi |
-| Testler | Yazıldı, çalıştırılmadı |
-| AI | Kod yazıldı (Anthropic), **anahtar ve model verilmezse kapalı**; gerçek bir API çağrısı hiç denenmedi |
+| Backend | C#, .NET 10, ASP.NET Core, Razor Pages, Minimal APIs |
+| Data access | Entity Framework Core |
+| Database | PostgreSQL, PostGIS |
+| Authentication | ASP.NET Core Identity, cookie authentication, JWT for API scenarios |
+| Frontend | Razor, HTML, CSS, JavaScript, AJAX |
+| Maps | Leaflet |
+| Testing | xUnit, ASP.NET Core integration testing |
+| Infrastructure | Docker, Docker Compose |
 
-İlk çalıştırmada bir hata çıkarsa tam hata mesajını paylaşın; düzeltmesi genellikle tek satırdır.
+## Architecture overview
 
-## Teknolojiler
-
-.NET 10 / ASP.NET Core Razor Pages · HTML, CSS, JavaScript (`fetch` ile Ajax) · Entity Framework Core ·
-PostgreSQL + PostGIS (Npgsql + NetTopologySuite) · Leaflet (OpenStreetMap altlığı) · minimal API + OpenAPI/Swagger UI ·
-xUnit · Docker Compose (yalnızca veritabanı için)
-
-Paket sürümleri `10.0.*` olarak yazılmıştır; `dotnet restore` en güncel 10.0.x yamasını seçer.
-
-## Ön koşullar
-
-- .NET SDK 10 (`dotnet --version`)
-- Git
-- Docker Desktop (motor çalışıyor olmalı: `docker info` hata vermemeli)
-- `dotnet-ef` aracı: `dotnet tool install --global dotnet-ef --version 10.*`
-
-## Kurulum ve çalıştırma (Windows CMD, `GeoTrack` kök klasöründe)
-
-```cmd
-:: 1) Veritabanını başlat (PostgreSQL + PostGIS, kalıcı volume'lu)
-docker compose up -d
-docker compose ps
-
-:: 2) Uygulama klasörüne geç ve derle
-cd GeoTrack.Web
-dotnet build
-
-:: 3) Elle yazılmış migration'ı doğrula, sonra uygula
-dotnet ef migrations list
-dotnet ef migrations has-pending-model-changes
-dotnet ef database update
-
-:: 4) Çalıştır
-dotnet run --launch-profile https
+```text
+Browser
+  ├── Razor Pages UI
+  └── JavaScript / AJAX
+          │
+          ▼
+ASP.NET Core (.NET 10)
+  ├── Page handlers
+  ├── Incident services and validation
+  ├── Minimal API endpoints
+  ├── Authentication / authorization
+  └── Photo storage
+          │
+          ▼
+Entity Framework Core
+          │
+          ▼
+PostgreSQL + PostGIS
 ```
 
-Uygulama: <https://localhost:7080> (veya http://localhost:5080). Swagger: `/swagger`. OpenAPI JSON: `/openapi/v1.json`.
+The application separates page handling, business logic, data access, and API endpoints. Server-side authorization is important: hiding a UI control is not treated as a security boundary.
 
-- **Migration doğrulaması:** `InitialCreate` dotnet ile üretilmedi. `has-pending-model-changes` "değişiklik yok" demelidir.
-  Fark bildirirse `Migrations/` klasöründeki 3 dosyayı silip `dotnet ef migrations add InitialCreate` çalıştırın
-  (veritabanı henüz boşken güvenlidir; `database update` uygulamadan önce yapın).
-- `docker compose` dosyası PostGIS imajı `postgis/postgis:17-3.5` kullanır (etiket, projenin resmî README'sinde doğrulandı).
-- Geliştirme ortamında (`appsettings.Development.json`) açılışta migration uygulanır ve tablo **boşsa** 6 adet `[DEMO]` kaydı eklenir.
-  Kayıt varsa tekrar eklenmez. Kapatmak için `Database:SeedDemoData` / `Database:ApplyMigrationsOnStartup` değerlerini `false` yapın.
+## Run locally with Docker
 
-## Docker ile tek komut (veritabanı + uygulama)
+### Prerequisites
 
-```cmd
-docker compose --profile app up -d --build
+- Docker Desktop with Docker Compose
+- Git
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/YOUR_GITHUB_USERNAME/GeoTrack.git
+cd GeoTrack
+```
+
+Replace `YOUR_GITHUB_USERNAME` with your GitHub username and adjust the repository name if needed.
+
+### 2. Configure environment variables
+
+Create a local `.env` file based on the example:
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell, you can instead copy the file in File Explorer or run:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Review `.env.example` and fill in the values required by your configuration. Use strong, unique local credentials. For Gmail SMTP, use a Google App Password with 2-Step Verification enabled; **never commit `.env`, SMTP credentials, JWT signing keys, or real passwords to Git**.
+
+If a configuration value is optional for local development, leave it unset only when the application supports that mode.
+
+### 3. Build and start the containers
+
+```bash
+docker compose up -d --build
+```
+
+### 4. Check the services
+
+```bash
+docker compose ps
 docker compose logs -f web
 ```
 
-Uygulama: <http://localhost:8080> · Swagger: <http://localhost:8080/swagger>. Bu mod açılışta migration uygular ve
-(tablo boşsa) demo veri ekler. Durdurmak için `docker compose --profile app down` (veri volume'da kalır).
+Open the application:
 
-## Yapılandırma
+- Web application: <http://localhost:8080>
+- Health check: <http://localhost:8080/healthz>
+- Local email inbox (if the SMTP testing service is enabled): <http://localhost:8025>
 
-| Anahtar | Açıklama |
-|---|---|
-| `ConnectionStrings:GeoTrack` (ortam değişkeni: `ConnectionStrings__GeoTrack`) | PostgreSQL bağlantı dizesi. Geliştirme değeri `appsettings.Development.json` içindedir. |
-| `Database:ApplyMigrationsOnStartup` | `true` ise açılışta migration uygulanır (Development'ta `true`). |
-| `Database:SeedDemoData` | `true` ise tablo boşken demo veri eklenir (Development'ta `true`). |
-| `POSTGRES_DB/USER/PASSWORD/PORT` | `compose.yaml` değişkenleri; `.env.example` dosyasını `.env` olarak kopyalayıp değiştirin. |
+The service name used in the logs command may differ in your Compose file. If `web` is not the service name, use the service name shown by `docker compose ps` or `docker compose config --services`.
 
-Compose'taki ve `appsettings.Development.json`'daki parola **yalnızca yerel geliştirme** içindir. `.env` Git'e eklenmez.
-Üretimde bağlantı dizesini ortam değişkeni veya gizli bilgi yöneticisiyle verin.
+### 5. Stop the application
 
-## Mimari notlar
-
-- **Konum**: `Incident.Location` → PostGIS `geography(Point, 4326)`; tek doğru konum kaynağıdır. Enlem/boylam yalnızca DTO'larda vardır.
-  Sıra: `X = boylam`, `Y = enlem` (`GeoFactory.CreatePoint(lat, lng)`).
-- **Yakınlık**: `IsWithinDistance` → `ST_DWithin` (geography, **metre**), sonuçlar `ST_Distance` ile mesafeye göre sıralanır.
-  `Location` üzerinde **GiST** indeks tanımlıdır (migration üretilince oluşur).
-- **Ondalık sayılar**: Sunucu kültürü `en-US` olarak sabittir; böylece `40.21` gibi değerler Türkçe Windows'ta da doğru okunur.
-- **Hatalar**: Beklenmeyen hatalar loglanır, kullanıcıya stack trace/bağlantı bilgisi gösterilmez.
-
-## REST API
-
-| Yöntem | Yol | Açıklama |
-|---|---|---|
-| GET | `/api/incidents?status=&category=&page=1&pageSize=20` | Sayfalı liste (`pageSize` en fazla 100) |
-| GET | `/api/incidents/{id}` | Tek kayıt (yoksa 404) |
-| POST | `/api/incidents` | Oluştur (201 / doğrulama hatasında 400) |
-| PUT | `/api/incidents/{id}` | Güncelle (200 / 400 / 404) |
-| DELETE | `/api/incidents/{id}` | Sil (204 / 404) |
-| GET | `/api/incidents/nearby?lat=40.21&lng=28.94&radiusMeters=500` | Yarıçap içindekiler (en fazla 50 000 m) |
-| POST | `/api/incidents/ai-suggestion` | AI önerisi (yapılandırılmadıysa 503) |
-
-Değerler: `category` → `Road`, `WaterInfrastructure`, `Electricity`, `Waste`, `Other` ·
-`status` → `New`, `InProgress`, `Assigned`, `Resolved` · `priority` → `Low`, `Medium`, `High`, `Critical`.
-
-Örnek (CMD, `curl.exe`):
-
-```cmd
-curl.exe -k -X POST https://localhost:7080/api/incidents -H "Content-Type: application/json" -d "{\"title\":\"Mazgal tıkalı\",\"description\":\"Yoğun yağışta yol su altında kalıyor.\",\"category\":\"WaterInfrastructure\",\"priority\":\"High\",\"latitude\":40.21,\"longitude\":28.94}"
-curl.exe -k "https://localhost:7080/api/incidents/nearby?lat=40.21&lng=28.94&radiusMeters=500"
-curl.exe -k -i "https://localhost:7080/api/incidents/nearby?lat=95&lng=28.94&radiusMeters=500"
+```bash
+docker compose down
 ```
-(`-k` yalnızca yerel geliştirme sertifikası içindir.) Son komut **400** dönmelidir.
 
-## Testler
+This stops and removes containers but normally preserves named volumes. Do not use `docker compose down -v` unless you intentionally want to delete the database volume and its data.
 
-```cmd
-:: Veritabanı gerektirmeyen testler (doğrulama, etiketler, LINQ→ST_DWithin SQL çevirisi)
-dotnet test
+## Run tests
 
-:: Gerçek PostGIS testlerini de çalıştırmak için (migration uygulanmış olmalı):
-set GEOTRACK_TEST_CONNECTION=Host=localhost;Port=5432;Database=geotrack;Username=geotrack;Password=geotrack_dev_password
+From the repository root:
+
+```bash
 dotnet test
 ```
 
-`GEOTRACK_TEST_CONNECTION` yoksa gerçek PostGIS testleri **"atlandı (skipped)"** olarak görünür; bellek içi sahte veritabanıyla
-geçmiş gibi gösterilmez. Bu testler `(0,0)` civarında geçici kayıtlar oluşturup test sonunda siler.
+If the solution requires containers or environment-specific settings for integration tests, start the required services and follow the configuration documented in the repository. Report the actual test results for the commit you publish; do not describe tests as passing unless they have been run successfully.
 
-## AI yapılandırması
+## Configuration and security notes
 
-AI **isteğe bağlıdır** ve varsayılan olarak kapalıdır. `Ai:ApiKey` **ve** `Ai:Model` ikisi birden verilirse Anthropic
-Messages API kullanılır; biri eksikse öneri butonu "AI entegrasyonu yapılandırılmadı" der, CRUD/harita/API etkilenmez.
-Model adı koda gömülü değildir: hesabınızda erişiminiz olan bir model kimliğini siz verirsiniz. Kural tabanlı sahte öneri üretilmez.
+- Keep `.env` and local secrets out of version control.
+- Commit `.env.example` with placeholders only, never real credentials.
+- Use a strong JWT signing key supplied through a secret store or environment variable.
+- Keep authorization checks on the server for both Razor Pages and API endpoints.
+- Validate uploaded files and restrict file access according to incident permissions.
+- Configure production SMTP, HTTPS, persistent storage, backups, and logging before deployment.
+- The local SMTP inbox is intended for development/testing, not production email delivery.
 
-Yerel geliştirmede (User Secrets, Git'e girmez):
+## Project structure
 
-```cmd
-cd GeoTrack.Web
-dotnet user-secrets set "Ai:ApiKey" "BURAYA_KENDI_ANAHTARINIZ"
-dotnet user-secrets set "Ai:Model" "BURAYA_MODEL_KIMLIGI"
+```text
+GeoTrack/
+├── GeoTrack.Web/       # ASP.NET Core web application
+├── GeoTrack.Tests/     # Automated tests
+├── GeoTrack.sln        # Solution
+├── docker-compose.yml  # Local container orchestration (if present)
+├── .env.example        # Configuration template (if present)
+└── README.md
 ```
 
-Docker modunda `.env` dosyanıza `AI_API_KEY=` ve `AI_MODEL=` değerlerini yazın.
+The exact files and folders may evolve as the project develops.
 
-- Anahtar yalnızca sunucuda kalır; tarayıcıya gönderilmez, loga/hata mesajına yazılmaz.
-- Yanıt JSON olarak istenir, `AiResponseParser` ile doğrulanır; geçersiz kategori/öncelik reddedilir (ayrıştırıcı birim testleriyle kapsanır).
-- Öneri otomatik kaydedilmez; kullanıcı "kabul et" / "reddet" der. Sağlayıcı hata verirse form önerisiz çalışır.
-- Başka bir sağlayıcı için `IIncidentAiService`'i uygulayıp `Program.cs` kaydını değiştirmek yeterlidir.
-- **Gerçek bir AI çağrısı bu kod yazılırken hiç denenmedi**; anahtarınızla ilk denemede sonucu doğrulayın.
+## Roadmap
 
-## Git akışı
+- Improve automated coverage for authentication, authorization, and incident workflows.
+- Add more robust observability and production deployment guidance.
+- Refine accessibility and responsive behavior.
+- Expand geospatial analysis and reporting capabilities.
 
-Her aşama ayrı commit'tir (`git log --oneline`). Remote (GitHub) deposu oluşturulmadı ve push yapılmadı.
+## Author
 
-## Demo akışı
+**Özcan Polat**
+Computer Engineering graduate | Backend and full-stack development
 
-1. Panel ve arıza listesini aç (Ajax filtreleri dene).
-2. Yeni arıza oluştur (haritadan konum seç).
-3. Sayfayı yenile / uygulamayı yeniden başlat → kayıt PostgreSQL'de kalıcıdır.
-4. Harita sayfasında kaydı gör, bir nokta seç, 500 m çevresini sorgula.
-5. Swagger'da `GET /api/incidents/nearby` çağır; geçersiz `lat=95` ile 400 göster.
-6. AI yapılandırıldıysa öneri al ve onayla.
+- GitHub: `https://github.com/YOUR_GITHUB_USERNAME`
+- LinkedIn: `https://www.linkedin.com/in/YOUR_LINKEDIN_USERNAME/`
 
-## Bilinen eksikler
+Replace the placeholder profile links before publishing.
 
-- Kod derlenmedi/çalıştırılmadı; migration elle yazıldı (yukarıdaki durum tablosu).
-- Kimlik doğrulama ve rol (yönetici/saha personeli) ayrımı yok; çok kullanıcılı üretim güvenliği iddiası yoktur.
-- AI kodu yazıldı ama gerçek bir API çağrısıyla denenmedi.
-- Ekran görüntüleri yok (uygulama çalıştırılamadığı için eklenmedi); çalıştırdıktan sonra buraya ekleyin.
-- Leaflet, Swagger UI ve OpenStreetMap karoları CDN/çevrimiçi kaynaklardan gelir; internet gerekir.
-- Harita tüm kayıtları (en fazla 20 sayfa × 100) yükler; çok büyük veri kümeleri için sınır/kümeleme eklenmelidir.
-- API testlerinin 404/201 gibi veritabanı gerektiren yolları yalnızca `GEOTRACK_TEST_CONNECTION` ile gerçek PostGIS üzerinde çalışır.
+## License
+
+No license has been specified yet. Unless a license is added to this repository, standard copyright applies and others do not automatically receive permission to reuse, modify, or distribute the code.

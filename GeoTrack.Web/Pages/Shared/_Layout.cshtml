@@ -10,13 +10,28 @@
 <body>
     <header class="topbar">
         <div class="container bar">
-            <a class="brand" asp-page="/Index">GeoTrack</a>
+            <a class="brand" asp-page="/Index"><span class="brand-mark" aria-hidden="true">G</span><span>GeoTrack</span></a>
             <nav class="nav" aria-label="Ana menü">
-                <a asp-page="/Index">Panel</a>
-                <a asp-page="/Incidents/Index">Arızalar</a>
-                <a asp-page="/Incidents/Map">Harita</a>
-                <a asp-page="/Incidents/Create">Yeni Arıza</a>
-                <a href="/swagger">API (Swagger)</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-page="/Index">Panel</a>
+                    <a asp-page="/Incidents/Index">Olaylar</a>
+                    <a asp-page="/Incidents/Map">Harita</a>
+                    <a asp-page="/Search/Index">Arama</a>
+                    <a asp-page="/Analytics/Index">Analitik</a>
+                    <a asp-page="/Notifications/Index" class="notification-nav" aria-label="Bildirimler">
+                        <span aria-hidden="true">🔔</span> Bildirimler
+                        <span id="notification-unread-count" class="notification-count" aria-live="polite" hidden></span>
+                    </a>
+                    @if (User.IsInRole("Admin")) { <a asp-page="/Admin/Index">Yönetim</a> }
+                    <a class="btn primary" asp-page="/Incidents/Create">+ Yeni olay</a>
+                    <form method="post" asp-page="/Account/Logout"><button type="submit">Çıkış</button></form>
+                }
+                else
+                {
+                    <a asp-page="/Account/Login">Giriş</a>
+                    <a asp-page="/Account/Register">Kayıt ol</a>
+                }
             </nav>
         </div>
     </header>
@@ -26,6 +41,10 @@
         {
             <div class="alert success" role="status">@success</div>
         }
+        @if (TempData["Error"] is string pageError)
+        {
+            <div class="alert error" role="alert">@pageError</div>
+        }
         @RenderBody()
     </main>
 
@@ -34,5 +53,9 @@
     </footer>
 
     @await RenderSectionAsync("Scripts", required: false)
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script src="~/js/navigation.js" asp-append-version="true"></script>
+    }
 </body>
 </html>

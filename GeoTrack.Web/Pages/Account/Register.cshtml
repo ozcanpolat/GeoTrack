@@ -1,0 +1,11 @@
+@page
+@model GeoTrack.Web.Pages.Account.RegisterModel
+@{ ViewData["Title"] = "Hesap oluştur"; }
+<section class="panel auth-panel"><span class="eyebrow">Yeni hesap</span><h1>GeoTrack'e katılın</h1>
+<p class="muted">Kayıttan sonra e-posta adresinize 6 haneli bir doğrulama kodu gönderilir; hesap kodu girince etkinleşir.</p>
+@if (!Model.EmailConfigured) { <div class="alert warning" role="status">E-posta doğrulama hizmeti şu an kullanılamıyor; kayıt geçici olarak kapalı.</div> }
+<form method="post" class="form" novalidate><div class="field"><label asp-for="Email">E-posta</label><input asp-for="Email" type="email" autocomplete="email" required /><span asp-validation-for="Email" class="field-error"></span></div>
+<div class="field"><label asp-for="Password">Parola · en az 12 karakter, büyük/küçük harf, rakam ve sembol</label><input asp-for="Password" type="password" autocomplete="new-password" required minlength="12" /><span asp-validation-for="Password" class="field-error"></span></div>
+@foreach (var error in Model.Errors) { <p class="alert error" role="alert">@error</p> }
+<button class="btn primary" type="submit" disabled="@(!Model.EmailConfigured)">Kod gönder ve kaydol</button></form>
+<p class="muted">Zaten hesabınız var mı? <a asp-page="Login">Giriş yapın</a> · <a asp-page="Verify">Kodum var</a></p></section>

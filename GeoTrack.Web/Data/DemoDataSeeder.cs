@@ -3,10 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GeoTrack.Web.Data;
 
-/// <summary>
-/// DEMO verisi. Kayıtlar ve koordinatlar tamamen kurgusaldır; gerçek bir
-/// kurum verisi değildir. Tablo boş değilse hiçbir şey eklenmez (tekrar çalışsa da çoğalmaz).
-/// </summary>
+
 public static class DemoDataSeeder
 {
     public static async Task SeedAsync(GeoTrackDbContext db, CancellationToken ct = default)

@@ -10,11 +10,13 @@ public class AiOptions
     public string? ApiKey { get; set; }
 
     /// <summary>Kullanılacak model kimliği. Koda gömülü değildir; hesabınızda erişiminiz olan bir model adı verin.</summary>
-    public string? Model { get; set; }
+    public string? Model { get; set; } = DefaultModel;
+
+    public const string DefaultModel = "claude-haiku-5-5";
 
     public string Endpoint { get; set; } = "https://api.anthropic.com/v1/messages";
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey) && !string.IsNullOrWhiteSpace(Model);
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
 }
 
 /// <summary>

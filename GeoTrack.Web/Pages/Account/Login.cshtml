@@ -1,0 +1,22 @@
+@page
+@model GeoTrack.Web.Pages.Account.LoginModel
+@{ ViewData["Title"] = "Giriş"; }
+<section class="panel auth-panel"><span class="eyebrow">GeoTrack hesabı</span><h1>Tekrar hoş geldiniz</h1>
+<p class="muted">Olay alanınıza güvenli biçimde giriş yapın.</p>
+<form method="post" class="form"><input type="hidden" asp-for="ReturnUrl" />
+@if (Model.RequiresTwoFactor)
+{
+    <input type="hidden" asp-for="Email" />
+    <div class="field"><label asp-for="TwoFactorCode">Authenticator veya kurtarma kodu</label><input asp-for="TwoFactorCode" autocomplete="one-time-code" inputmode="numeric" required /></div>
+    <label class="check-field"><input asp-for="IsRecoveryCode" /> Kurtarma kodu kullanıyorum</label>
+    <p class="hint">Authenticator uygulamanızdaki 6 haneli kodu girin. Kurtarma kodları tek kullanımlıktır.</p>
+}
+else
+{
+    <div class="field"><label asp-for="Email">E-posta</label><input asp-for="Email" type="email" autocomplete="username" required /></div>
+    <div class="field"><label asp-for="Password">Parola</label><input asp-for="Password" type="password" autocomplete="current-password" required /></div>
+}
+@if (Model.Error is not null) { <div class="alert error" role="alert">@Model.Error</div> }
+<button class="btn primary" type="submit">@(Model.RequiresTwoFactor ? "Doğrula ve giriş yap" : "Giriş yap")</button>
+</form>
+@if (!Model.RequiresTwoFactor) { <p class="auth-links"><a asp-page="ForgotPassword">Parolamı unuttum</a><a asp-page="Register">Hesap oluştur</a><a asp-page="Verify">Doğrulama kodum var</a></p> }</section>
