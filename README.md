@@ -185,9 +185,6 @@ The exact files and folders may evolve as the project develops.
 **Özcan Polat**
 Computer Engineering graduate | Backend and full-stack development
 
-- GitHub: `https://github.com/YOUR_GITHUB_USERNAME`
-- LinkedIn: `https://www.linkedin.com/in/YOUR_LINKEDIN_USERNAME/`
-
 Replace the placeholder profile links before publishing.
 
 ## License
